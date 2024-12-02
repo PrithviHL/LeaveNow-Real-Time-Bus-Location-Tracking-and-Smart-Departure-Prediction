@@ -61,33 +61,8 @@ docker build -t leavenow .
 # Run container
 docker run -p 8080:8080 leavenow
 
-System Requirements
+## System Requiremnets
 Python 3.8+
 Docker
 Kubernetes
 AWS account for cloud deployment
-Performance Metrics
-Prediction Accuracy: 87% within ±3 minutes
-System Uptime: 99.9%
-User Satisfaction: NPS 72
-Average Time Saved: 7 minutes per trip
-
-Monitoring
-The system uses Prometheus and Grafana for monitoring:
-Real-time prediction accuracy
-System health metrics
-User engagement statistics
-API performance
-Documentation
-Refer to the documentation/ directory for:
-System architecture details
-API specifications
-Deployment guides
-User manuals
-
-Contributing
-Fork the repository
-Create feature branch (git checkout -b feature/AmazingFeature)
-Commit changes (git commit -m 'Add AmazingFeature')
-Push to branch (git push origin feature/AmazingFeature)
-Open Pull Request
