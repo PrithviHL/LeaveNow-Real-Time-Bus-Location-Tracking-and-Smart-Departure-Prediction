@@ -35,6 +35,10 @@ The health route checks local readiness/configuration. A stop search exercises t
 | Location permission denied     | Search a stop, enter coordinates, or place a map pin                                        |
 | Blank basemap                  | OpenStreetMap tiles require external network access; planning can still work                |
 
+## Container prototype
+
+The Streamlit variant adds explicitly configured container service hosts while retaining loopback-only defaults for normal startup. See [Streamlit Docker/Kubernetes](streamlit-containers.md) for setup and verification limits. `HOST=0.0.0.0` and `ALLOWED_HOSTS` are opt-in settings for those containers.
+
 ## Shared hosting
 
 The listener deliberately binds to 127.0.0.1. Host/Origin checks only allow local access. This repository is not configured for public production deployment. Shared hosting needs a reviewed reverse proxy/HTTPS and host configuration, request/rate limits, monitoring, secrets management, and a capacity-appropriate map/data provider. Browser geolocation requires HTTPS outside localhost.

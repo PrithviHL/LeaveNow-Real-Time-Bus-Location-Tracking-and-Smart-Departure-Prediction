@@ -43,11 +43,23 @@ public/           Browser interface and vendored Leaflet 1.9.4 assets
 scripts/          Syntax and hardcoded-credential checks
 tests/           Deterministic unit and HTTP integration tests
 docs/            Architecture, API reference, operations, validation, archive
- legacy/          Original research notebooks and Streamlit submission
+ prototypes/      Streamlit interface and Python tests
+deploy/          Dockerfiles and Kubernetes manifests
+legacy/          Original research notebooks and Streamlit submission
 .github/          Continuous integration
 ```
 
 The active application lives in `src/server` and `public`. Earlier project reports, models, and notebooks are retained for reference, not used by the new application. Historical claims about model accuracy, AWS, and Kubernetes are not claims about this implementation.
+
+## Streamlit prototype with Docker and Kubernetes
+
+An additional Streamlit interface is available in `prototypes/streamlit`. It reuses the existing Node planner. With Docker running and the local `.env` configured:
+
+```sh
+docker compose up --build --wait
+```
+
+Open http://localhost:8501. Kubernetes manifests, a local kind workflow, native Python setup, security boundaries, and verification limits are documented in [Streamlit containers](docs/streamlit-containers.md). Docker/cluster execution must be validated on a machine or CI runner with those runtimes; having manifests alone is not a running deployment.
 
 ## Development
 

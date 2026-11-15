@@ -13,3 +13,7 @@ Map data © OpenStreetMap contributors, available under the Open Database Licens
 Stops, vehicle positions, and arrival predictions are provided by Regional Transit Service / RGRTA using an API access credential. Provider terms and availability apply: https://www.myrts.com/RGRTA-API.
 
 Historical reports/notebooks may describe other third-party packages. Those Python packages are not dependencies of the active Node application.
+
+## Streamlit prototype
+
+The optional Python prototype uses Streamlit and streamlit-geolocation under their package licenses. They are pinned in prototypes/streamlit/requirements.txt and installed during image builds; they are not vendored into the Node application. Streamlit maps use its configured external basemap provider.
