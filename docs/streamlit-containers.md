@@ -2,6 +2,12 @@
 
 This is an active Streamlit prototype in `prototypes/streamlit`, separate from the archived Python submission in `legacy`. It calls the existing Node trip planner rather than duplicating routing logic or loading historical pickle models.
 
+## Interface
+
+The Streamlit UI includes a dark transit theme, interactive day/night map, hoverable location markers, journey tickets, and a step-by-step trip timeline. **East → Park** and **Park → East** prefill real example coordinates without inventing departures. **Swap locations** reverses the selected start and destination. The initial and no-direct-trip screens still show the map. Changing locations clears the previous planned trip; pressing the main search button requests live data again.
+
+`.streamlit/config.toml` supplies the base theme. `presentation.py` holds escaped HTML components and Pydeck map rendering; `theme.css` contains responsive styling and respects reduced-motion preferences. CSS, map, and theme files are explicitly copied into the Docker image. Google Fonts and the map basemap require external browser access; system fonts are the fallback.
+
 ## Services
 
 ```text
@@ -106,7 +112,7 @@ python -m unittest discover -s prototypes/streamlit/tests -v
 kubectl kustomize deploy/kubernetes
 ```
 
-Node tests check container configuration while retaining local defaults. Eight Python tests cover the API client and Streamlit initial, success, no-service, and backend-failure states. A local kubectl client can render Kustomize without a cluster. All five rendered resources also passed kubeconform strict schema validation against Kubernetes 1.35.0.
+Node tests check container configuration while retaining local defaults. Nine Python tests cover the API client and Streamlit initial, success, no-service, and backend-failure states. A local kubectl client can render Kustomize without a cluster. All five rendered resources also passed kubeconform strict schema validation against Kubernetes 1.35.0.
 
 `.github/workflows/containers.yml` is configured to test Streamlit, build/run Compose, create a disposable kind cluster, load the built images, and verify both Kubernetes deployments and the internal API connection. CI uses a dummy key and process health checks; it does not claim successful live RTS predictions. No deployment is created in a user cloud account by this workflow.
 

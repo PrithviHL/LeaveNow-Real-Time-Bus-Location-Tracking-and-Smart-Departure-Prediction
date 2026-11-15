@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Redesigned Streamlit with a dark transit theme, route tickets, journey timeline, interactive day/night map, location presets, and location swapping.
+
 - Added a Streamlit trip-planning prototype sharing the Node routing API.
 - Added separate Docker images, Compose, Kubernetes deployments/services/probes, and a Secret helper.
 - Added explicit container bind/host configuration while preserving local-only defaults.
