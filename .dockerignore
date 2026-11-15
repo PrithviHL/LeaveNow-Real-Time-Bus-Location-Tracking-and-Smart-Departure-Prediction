@@ -1,0 +1,15 @@
+**
+!package.json
+!src/
+!src/server/
+!src/server/**
+!public/
+!public/**
+!prototypes/
+!prototypes/streamlit/
+!prototypes/streamlit/app.py
+!prototypes/streamlit/client.py
+!prototypes/streamlit/requirements.txt
+!deploy/
+!deploy/docker/
+!deploy/docker/**
