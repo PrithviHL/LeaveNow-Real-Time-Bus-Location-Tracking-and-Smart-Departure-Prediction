@@ -1,79 +1,42 @@
 # LeaveNow
 
-**Your next bus, figured out.** A local web application for planning direct journeys on Rochester’s RTS network. Choose a starting location and destination; LeaveNow finds nearby stops, checks live arrivals at both ends, and shows a catchable bus and when to leave.
+**Your next bus, figured out.** A Rochester RTS trip planner combining published timetables with available live predictions.
 
-## Quick start
+**[Open the live Render app](https://leavenow-prithvihl.onrender.com)**
 
-Requires **Node.js 22.9+** and an RTS API key. There are no npm dependencies to install.
+## Current application
 
-```sh
-cp .env.example .env
-# Set RTS_API_KEY in .env.
-npm start
-```
+The deployed Streamlit app and its current source are on **[`feature/streamlit-containers`](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/tree/feature/streamlit-containers)**. This `main` branch retains the earlier direct-bus browser implementation. This documentation update does not merge that application branch into `main`.
 
-Open [localhost:3001](http://localhost:3001). This checkout already has a local `.env` configured. Do not overwrite it unless you intend to replace the credential.
+The live app includes:
 
-On the current Codex machine, `./run.sh` also works when Node is absent from the shell path. It uses the bundled Node runtime as a fallback. Keep the process running while using the app; press Ctrl+C to stop it.
+- Google sign-in, a top-right account menu, and sign-out.
+- Searchable stop suggestions for both starting point and destination, GPS for the starting point, coordinates, and sample trips.
+- **Leave now**, **Depart at**, and **Arrive by** controls.
+- Direct journeys and up to one transfer using official RTS GTFS schedules, walking estimates, and connection buffers.
+- **Live**, **Scheduled**, and **Live + Scheduled** timing labels, journey timelines, and maps.
+- Server-side RTS credentials and a private Node API inside the public Docker service.
 
-## Using the app
+Suggestions cover RTS stops rather than arbitrary street addresses. Routing is bounded and live data may be unavailable; check the source labels and verify before travel. The free Render service may sleep. Google's consent audience may restrict sign-in while in Testing.
 
-1. Click the location button to use device GPS, search for an RTS stop or intersection, enter `latitude, longitude`, or choose a starting pin on the map.
-2. Choose the destination in the same way. Search results are RTS stop names, not a general address directory. For another location, place a map pin.
-3. Set the walking allowance at each end and click **Find my next bus**.
-4. Read the recommended route, boarding/alighting stops, live arrival times, and leave-by time. The closest physical stop is shown separately if the recommendation uses another nearby stop.
+## Documentation and local setup
 
-Search and location permission failures have manual fallbacks. **Try a trip from East & Alexander** fills an example Rochester journey using current API stop data. Example results depend on which buses are actually running.
+- [Current README, quick start, and examples](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/blob/feature/streamlit-containers/README.md)
+- [Timetable rules and limits](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/blob/feature/streamlit-containers/docs/timetable-routing.md)
+- [Google sign-in setup](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/blob/feature/streamlit-containers/docs/google-sign-in.md)
+- [Public deployment and secret handling](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/blob/feature/streamlit-containers/docs/public-deployment.md)
+- [Docker and development Kubernetes profiles](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/blob/feature/streamlit-containers/docs/streamlit-containers.md)
 
-## What is included
-
-- Responsive trip planner, interactive map, current-location permission flow, and keyboard-accessible stop selection
-- Current RTS stops and vehicle positions, cached server-side
-- Direct-trip verification using matching trip identity and downstream arrival times, with vehicle agreement when IDs are available
-- Walking allowance, boarding buffer, stale-feed filtering, nearby departures, and explicit no-direct-trip states
-- Automatic arrival refresh while a planned trip is visible, plus manual refresh
-- Backend-only API credential, local-only listener, origin validation, request-size limits, and generic upstream errors
-- Automated planner, API client, HTTP, and configuration tests; CI for Node 22 and 24
-
-## Repository structure
-
-```text
-src/server/       HTTP application, configuration, RTS client, trip planning
-public/           Browser interface and vendored Leaflet 1.9.4 assets
-scripts/          Syntax and hardcoded-credential checks
-tests/           Deterministic unit and HTTP integration tests
-docs/            Architecture, API reference, operations, validation, archive
- legacy/          Original research notebooks and Streamlit submission
-.github/          Continuous integration
-```
-
-The active application lives in `src/server` and `public`. Earlier project reports, models, and notebooks are retained for reference, not used by the new application. Historical claims about model accuracy, AWS, and Kubernetes are not claims about this implementation.
-
-## Development
+To get the deployed implementation:
 
 ```sh
-npm run dev            # Restart the server after backend changes
-npm run check          # Syntax validation and source credential scan
-npm test               # Deterministic tests, no RTS credential/network required
-npm run test:coverage  # Same tests with Node’s coverage report
+git clone --branch feature/streamlit-containers https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction.git
 ```
 
-Static assets reload on browser refresh. The RTS provider is mocked in tests. A real live-data check is documented separately; it is not part of CI.
+Follow the active README for Node/Python setup, GTFS import, and local Google secrets. Never commit API keys or `.streamlit/secrets.toml`. The Google callback for the live app is `https://leavenow-prithvihl.onrender.com/oauth2callback`.
 
-## Scope and limitations
+## Deployment boundaries
 
-This version supports **direct journeys in the current RTS prediction window**, checking up to six nearby stops at each end. It does not plan transfers or future timetable journeys. No verified direct result means none was found in this bounded search, not that transit is impossible.
+Render runs the Streamlit interface and private Node API in one Docker container. The repository also provides separate-service Docker Compose and Kubernetes examples for development/CI; those examples are not the live Render topology. Archived research and model-accuracy claims do not describe the current runtime.
 
-Walking is an estimate: straight-line distance × 1.25, at 80 meters/minute, with a two-minute boarding buffer. Dotted map lines are connection guides, not street-following walking or bus routes. Use the boarding-stop walking-directions link and check crossings. Results and trip times can change; verify before travel.
-
-The service binds to `127.0.0.1` and is intended for local use. It has no account system or production hosting configuration. Read [operations](docs/operations.md) before adapting it for shared hosting.
-
-## Documentation
-
-- [Architecture and planning rules](docs/architecture.md)
-- [API reference](docs/api.md)
-- [Configuration and operations](docs/operations.md)
-- [Validation and known limits](docs/testing.md)
-- [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Change log](CHANGELOG.md)
-
-Live data is provided by [RTS](https://www.myrts.com/RGRTA-API). Maps use [OpenStreetMap](https://www.openstreetmap.org/copyright) data and tiles. Leaflet is redistributed under its included [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md).
+The service display name is `leavenow`, but the actual public URL is still **https://leavenow-prithvihl.onrender.com**. Use that URL for LinkedIn or portfolio links.
