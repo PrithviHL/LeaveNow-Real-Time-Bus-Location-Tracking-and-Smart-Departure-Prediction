@@ -99,5 +99,3 @@ The system achieved:
 - Net Promoter Score (NPS) of 72
 - Average time saving of 7 minutes per trip
 - Successfully handled 300% usage spikes
-
-
