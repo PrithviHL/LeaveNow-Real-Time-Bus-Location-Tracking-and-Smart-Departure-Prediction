@@ -6,3 +6,7 @@ node_modules/
 coverage/
 .env.*
 !.env.example
+.venv/
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
