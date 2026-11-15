@@ -20,7 +20,7 @@ from client import (
 )
 
 from presentation import theme, markup, map_view, ticket, timeline, empty_card
-from authentication import account_controls
+from authentication import account_controls, account_menu
 
 st.set_page_config(
     page_title="LeaveNow · Your next move",
@@ -30,9 +30,18 @@ st.set_page_config(
 )
 theme()
 api_enabled = os.environ.get("LEAVENOW_API_CONFIGURED", "1") == "1"
-markup(
-    '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
-)
+if st.user.get("is_logged_in", False):
+    navigation, account = st.columns([5, 1.3], vertical_alignment="center")
+    with navigation:
+        markup(
+            '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
+        )
+    with account:
+        account_menu()
+else:
+    markup(
+        '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
+    )
 markup(
     '<div class="ln-hero"><div class="ln-eyebrow">THE CITY IS MOVING. SO CAN YOU.</div><h1>Less waiting.<br><span>More going.</span></h1><p>Your nearest stop. The right bus. A little more time for everything else.</p></div>'
 )
