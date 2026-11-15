@@ -51,6 +51,10 @@ Returns `vehicles` and `checkedAt` (Unix milliseconds). Each vehicle has `id`, `
 
 Coordinates must be finite numbers in valid latitude/longitude ranges. `maxWalk` is optional and defaults to 15; supported values are 5, 10, 15, and 20 minutes at each end. Maximum request body: 16 KB.
 
+`mode` is `leave_now` (default), `depart_at`, or `arrive_by`. Future modes require `when` as UTC Unix milliseconds, from now through 14 days ahead. `maxTransfers` accepts 0 or 1 (default 1). `transferBuffer` accepts 3, 5, 8, or 10 minutes (default 5). Without a compiled timetable, future modes return an availability error and Leave now falls back to direct live-only retrieval.
+
+Journeys include `legs`, `transfers`, connection walk/minimum/wait information, and `timingSource` / `timingLabel`. Source labels are `Live`, `Scheduled`, or `Live + Scheduled`; individual leg times also carry provenance. `feed` contains the official source, service date range, version, import date, and checksum. Scheduled legs retain their baseline arrival/departure timestamps when live updates are applied.
+
 Response fields:
 
 | Field                             | Meaning                                                       |

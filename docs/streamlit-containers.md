@@ -19,7 +19,7 @@ Browser (GPS, stop search, coordinates)
 
 Only the Node API receives `RTS_API_KEY`. Streamlit reads `LEAVENOW_API_URL` server-side. GPS uses the `streamlit-geolocation` component and requires a user click plus browser permission. Search and coordinates are available when GPS is unavailable. Maps and the geolocation component require actual browser verification; Python AppTest checks server-rendered UI logic.
 
-The same direct-trip constraints apply: nearby stops at each end, matching live trip and vehicle, downstream destination ETA, fresh predictions, sufficient walking time, and a two-minute boarding buffer. No transfers or future timetable planning are added.
+The same direct-trip constraints apply: nearby stops at each end, matching live trip and vehicle, downstream destination ETA, fresh predictions, sufficient walking time, and a two-minute boarding buffer. Direct and one-transfer timetable journeys, future departure/arrival controls, and live overlays are described in [timetable routing](timetable-routing.md).
 
 ## Docker Compose
 
@@ -85,6 +85,7 @@ kind delete cluster --name leavenow
 Start the Node API with `npm start` or `./run.sh`. In another terminal:
 
 ```sh
+python3 scripts/import-gtfs.py
 python3.12 -m venv .venv
 .venv/bin/pip install -r prototypes/streamlit/requirements.txt
 LEAVENOW_API_URL=http://127.0.0.1:3001 .venv/bin/python -m streamlit run prototypes/streamlit/app.py --server.port=8501
@@ -112,7 +113,7 @@ python -m unittest discover -s prototypes/streamlit/tests -v
 kubectl kustomize deploy/kubernetes
 ```
 
-Node tests check container configuration while retaining local defaults. Nine Python tests cover the API client and Streamlit initial, success, no-service, and backend-failure states. A local kubectl client can render Kustomize without a cluster. All five rendered resources also passed kubeconform strict schema validation against Kubernetes 1.35.0.
+Node tests check container configuration while retaining local defaults. Python tests cover the API client and Streamlit initial, success, no-service, and backend-failure states. A local kubectl client can render Kustomize without a cluster. All five rendered resources also passed kubeconform strict schema validation against Kubernetes 1.35.0.
 
 `.github/workflows/containers.yml` is configured to test Streamlit, build/run Compose, create a disposable kind cluster, load the built images, and verify both Kubernetes deployments and the internal API connection. CI uses a dummy key and process health checks; it does not claim successful live RTS predictions. No deployment is created in a user cloud account by this workflow.
 

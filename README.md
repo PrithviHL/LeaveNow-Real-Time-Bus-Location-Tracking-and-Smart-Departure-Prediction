@@ -1,14 +1,19 @@
 # LeaveNow
 
-**Your next bus, figured out.** A local web application for planning direct journeys on Rochester’s RTS network. Choose a starting location and destination; LeaveNow finds nearby stops, checks live arrivals at both ends, and shows a catchable bus and when to leave.
+**Your next bus, figured out.** A trip planner for Rochester’s RTS network with live predictions, published timetables, and direct or one-transfer journeys. Choose a starting location and destination; LeaveNow finds nearby stops, checks live arrivals at both ends, and shows a catchable bus and when to leave.
+
+**[Open the live Streamlit app](https://leavenow-prithvihl.onrender.com)**
+
+The main Streamlit interface offers **Leave now**, **Depart at**, and **Arrive by**, with distinct **Live**, **Scheduled**, and **Live + Scheduled** labels. See [timetable routing](docs/timetable-routing.md) for search limits, data refresh, and verification.
 
 ## Quick start
 
-Requires **Node.js 22.9+** and an RTS API key. There are no npm dependencies to install.
+Requires **Node.js 22.9+** and an RTS API key. There are no npm dependencies to install. Compile timetable data with `npm run gtfs:import` (Python 3.12 recommended).
 
 ```sh
 cp .env.example .env
 # Set RTS_API_KEY in .env.
+npm run gtfs:import
 npm start
 ```
 
@@ -78,11 +83,11 @@ Static assets reload on browser refresh. The RTS provider is mocked in tests. A 
 
 ## Scope and limitations
 
-This version supports **direct journeys in the current RTS prediction window**, checking up to six nearby stops at each end. It does not plan transfers or future timetable journeys. No verified direct result means none was found in this bounded search, not that transit is impossible.
+The Streamlit planner supports **direct journeys and up to one transfer** using the current RTS GTFS feed. Departures are searched up to 36 hours forward; Arrive by looks back up to eight hours while excluding trips you can no longer catch. Future controls cover the next 14 days within published service dates. The original browser interface keeps a direct-only view. No result means none was found within these bounded limits, not that all transit is impossible.
 
 Walking is an estimate: straight-line distance × 1.25, at 80 meters/minute, with a two-minute boarding buffer. Dotted map lines are connection guides, not street-following walking or bus routes. Use the boarding-stop walking-directions link and check crossings. Results and trip times can change; verify before travel.
 
-The service binds to `127.0.0.1` and is intended for local use. It has no account system or production hosting configuration. Read [operations](docs/operations.md) before adapting it for shared hosting.
+Normal startup binds the API to `127.0.0.1`. The public Render profile serves Streamlit over HTTPS while keeping this API on loopback; it has no account system. Read [operations](docs/operations.md) before adapting it for shared hosting.
 
 ## Documentation
 

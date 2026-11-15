@@ -50,3 +50,7 @@ A plan can return partial coverage with a warning when some stops fail. If all p
 ## Deliberate boundaries
 
 Search covers RTS stop names and IDs. Map pins and coordinate entry support arbitrary starting/destination locations without introducing an external address-geocoding dependency. No transfers, GTFS schedule search, road-network walking routing, or inferred bus geometry are implemented. Future transfer planning should use an ordered timetable/GTFS graph rather than combining unrelated arrival predictions.
+
+## Timetable extension
+
+The live Streamlit deployment now uses `schedule.js` for service calendars, trip/stop order, and bounded direct/one-transfer search. `journeys.js` validates travel controls, joins fresh RTS predictions by exact GTFS trip ID, and rechecks catchability, arrival deadlines, and transfer buffers after live changes. `scripts/import-gtfs.py` builds the compact artifact from the official feed. See [timetable routing](timetable-routing.md) for the current flow; the earlier direct-only sequence above describes the compatibility fallback and original browser interface.

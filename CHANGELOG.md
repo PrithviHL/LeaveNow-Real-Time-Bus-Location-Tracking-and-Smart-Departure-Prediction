@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added official RTS GTFS ingestion, service calendars, holiday exceptions, overnight times, and feed-expiry checks.
+- Added direct and one-transfer scheduled routing with walking and connection buffers.
+- Added Leave now / Depart at / Arrive by controls, multi-leg timelines, and source-labelled Live/Scheduled results.
+- Revalidate connections and deadlines after exact-trip live updates; retain scheduled results when real-time data is unavailable.
+
 - Added a Render-ready public container with loopback-only API, blocked exposed-key detection, and secret-free UI environment.
 - Added upstream request budgeting, history credential scanning, and deployment/security verification tests.
 
