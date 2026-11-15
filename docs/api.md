@@ -75,3 +75,7 @@ Journey fields include route/headsign/direction, trip and vehicle IDs, boarding/
 ## Errors
 
 Errors use `{"error":"message"}`. Status codes include 400 (invalid input), 403 (Host/Origin restriction), 404 (missing asset), 405 (unsupported method), 413 (request too large), 415 (unsupported content type), and 503 (upstream failure). Credential values and upstream URLs containing keys must never be returned.
+
+### `GET /api/stops`
+
+Returns `{ "results": [{ "id", "name", "lat", "lon" }] }`, sorted by name and stop ID. Uses the loaded GTFS stop catalog, falling back to the RTS stop list when no timetable is loaded. The Streamlit UI caches this public catalog for one hour and filters searchable dropdowns locally as users type; no API request or RTS credential is sent from the browser for each keystroke. Selecting an option resolves coordinates; clearing it removes the resolved location. This covers RTS stops, not arbitrary street-address geocoding.

@@ -15,7 +15,7 @@ from client import (
     api_request,
     clock_time,
     coordinate,
-    search_stops,
+    stop_catalog,
     travel_timestamp,
 )
 
@@ -84,42 +84,42 @@ preset_b.button(
 )
 
 
-@st.cache_data(ttl=60, show_spinner=False)
-def cached_search(query):
-    return search_stops(query)
+@st.cache_data(ttl=3600, show_spinner=False)
+def cached_stops():
+    return stop_catalog()
 
 
 def choose_stop(key, label):
-    with st.form(key + "_search_form"):
-        query = st.text_input(
-            label,
-            placeholder="e.g. East Alexander or Park Berkeley",
-            key=key + "_query",
-        )
-        submitted = st.form_submit_button("Search stops")
-    if submitted and not api_enabled:
+    if not api_enabled:
         st.info(
-            "Stop search is temporarily unavailable. Choose Coordinates or try a sample location."
+            "Stop suggestions are temporarily unavailable. Choose Coordinates or try a sample location."
         )
         return None
-    if submitted:
-        try:
-            st.session_state[key + "_matches"] = cached_search(query)
-        except ApiError as error:
-            st.session_state[key + "_matches"] = []
-            st.error(str(error))
-    matches = st.session_state.get(key + "_matches", [])
-    if not matches:
-        if submitted:
-            st.info("No matching stops. Try another intersection or enter coordinates.")
+    try:
+        matches = cached_stops()
+    except ApiError as error:
+        st.error(str(error))
         return None
+    if not matches:
+        st.info("No stops are available. Try coordinates or a sample location.")
+        return None
+    by_id = {str(stop["id"]): stop for stop in matches}
     selected = st.selectbox(
-        "Choose " + label.lower(),
-        range(len(matches)),
-        format_func=lambda i: f"{matches[i]['name']} · stop {matches[i]['id']}",
-        key=key + "_selected",
+        label,
+        options=list(by_id),
+        index=None,
+        format_func=lambda stop_id: f"{by_id[stop_id]['name']} · stop {stop_id}",
+        placeholder="Type a stop or destination, e.g. East, Park, Airport…",
+        filter_mode="fuzzy",
+        key=key + "_stop",
     )
-    return coordinate(matches[selected]["lat"], matches[selected]["lon"])
+    st.caption(
+        "Start typing to filter RTS stops, then select a suggestion. For street addresses, choose Coordinates."
+    )
+    if selected is None:
+        return None
+    stop = by_id[selected]
+    return coordinate(stop["lat"], stop["lon"])
 
 
 def choose_coordinates(key):

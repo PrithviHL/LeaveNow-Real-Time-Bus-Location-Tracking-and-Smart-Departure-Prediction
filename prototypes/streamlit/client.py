@@ -91,3 +91,8 @@ def travel_timestamp(day, clock):
             "That local time does not exist because of the daylight-saving clock change."
         )
     return int(value.timestamp() * 1000)
+
+
+def stop_catalog():
+    """Public stop names and coordinates for instant client-side autocomplete."""
+    return api_request("/api/stops")["results"]

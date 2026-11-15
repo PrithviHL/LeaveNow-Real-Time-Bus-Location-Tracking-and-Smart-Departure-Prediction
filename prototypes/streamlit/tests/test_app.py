@@ -53,11 +53,37 @@ def ready_app():
 
 class AppTests(unittest.TestCase):
     def setUp(self):
+        CATALOG = [
+            {"id": "1007", "name": "East & Alexander", "lat": 43.155, "lon": -77.594},
+            {"id": "2940", "name": "Park & Berkeley", "lat": 43.148, "lon": -77.578},
+        ]
+        stops = patch("client.stop_catalog", return_value=CATALOG)
+        stops.start()
+        self.addCleanup(stops.stop)
         identity = patch(
             "authentication.st.user", {"is_logged_in": True, "name": "Test Traveler"}
         )
         identity.start()
         self.addCleanup(identity.stop)
+
+    def test_autocomplete_selection_resolves_both_locations(self):
+        app = AppTest.from_file(str(APP), default_timeout=20).run()
+        origin = next(s for s in app.selectbox if s.key == "origin_stop")
+        self.assertIsNone(origin.value)
+        self.assertTrue(any("East & Alexander" in label for label in origin.options))
+        origin.set_value("1007")
+        next(s for s in app.selectbox if s.key == "destination_stop").set_value("2940")
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.155)
+        self.assertEqual(app.session_state["resolved_destination"]["lat"], 43.148)
+        self.assertFalse(
+            next(b for b in app.button if b.label == "Find my next bus").disabled
+        )
+        next(s for s in app.selectbox if s.key == "origin_stop").set_value(None).run()
+        self.assertTrue(
+            next(b for b in app.button if b.label == "Find my next bus").disabled
+        )
 
     def test_initial_screen_and_missing_locations(self):
         app = AppTest.from_file(str(APP), default_timeout=20).run()

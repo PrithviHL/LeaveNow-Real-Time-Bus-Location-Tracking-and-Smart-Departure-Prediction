@@ -102,3 +102,5 @@ Live data is provided by [RTS](https://www.myrts.com/RGRTA-API). Maps use [OpenS
 ### Google sign-in
 
 The account panel supports Google sign-in and logout, with sign-in required to access the planner. Hosting credentials must be configured before login is enabled. See [Google sign-in setup](docs/google-sign-in.md) for the Google OAuth client, Render secrets, and local setup.
+
+Starting and destination stop fields include instant searchable dropdowns: type part of a stop name or its ID and select the matching option. Coordinates and browser geolocation remain available for locations outside the stop list.

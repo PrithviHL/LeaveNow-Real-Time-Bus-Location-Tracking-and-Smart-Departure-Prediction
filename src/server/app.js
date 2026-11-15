@@ -48,6 +48,14 @@ export function handler(
           service: "RTS Rochester",
           timeZone: "America/New_York",
         });
+      if (req.method === "GET" && url.pathname === "/api/stops") {
+        const stops = (schedule ? schedule.stops : await client.stops())
+          .map(({ id, name, lat, lon }) => ({ id, name, lat, lon }))
+          .sort(
+            (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+          );
+        return json(200, { results: stops });
+      }
       if (req.method === "GET" && url.pathname === "/api/places") {
         const q = (url.searchParams.get("q") || "").trim().toLowerCase();
         if (q.length < 2 || q.length > 100)

@@ -20,6 +20,11 @@ test("HTTP validation, stop search, static files and origin boundaries", async (
     const health = await (await fetch(base + "/api/health")).json();
     assert.equal(health.configured, true);
     assert.ok(!JSON.stringify(health).includes("test-secret"));
+    const catalog = await (await fetch(base + "/api/stops")).json();
+    assert.deepEqual(catalog.results, [
+      { id: "1", name: "East & Alexander", lat: 43.155, lon: -77.594 },
+    ]);
+    assert.ok(!JSON.stringify(catalog).includes("test-secret"));
     const stops = await (await fetch(base + "/api/places?q=East")).json();
     assert.equal(stops.results[0].id, "1");
     assert.equal((await fetch(base + "/api/places?q=x")).status, 400);
