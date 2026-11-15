@@ -85,6 +85,20 @@ def main():
                     time.sleep(0.1)
             else:
                 raise RuntimeError("The private API did not become ready.")
+            try:
+                with urlopen(
+                    "http://127.0.0.1:3001/api/places?q=East%20Alexander", timeout=15
+                ) as response:
+                    matches = json.load(response).get("results", [])
+                print(
+                    f"RTS connection verified: stop search returned {len(matches)} matches.",
+                    flush=True,
+                )
+            except (URLError, OSError, ValueError):
+                print(
+                    "RTS startup check unavailable; visitors can retry stop search later.",
+                    flush=True,
+                )
         else:
             print(
                 "Live arrivals disabled: configure a replacement RTS_API_KEY in the hosting secret settings.",
