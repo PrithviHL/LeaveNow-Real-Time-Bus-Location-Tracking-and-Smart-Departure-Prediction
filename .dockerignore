@@ -17,3 +17,6 @@
 !deploy/docker/**
 !.streamlit/
 !.streamlit/config.toml
+!deploy/public_entrypoint.py
+!security/
+!security/blocked-credential-fingerprints.json

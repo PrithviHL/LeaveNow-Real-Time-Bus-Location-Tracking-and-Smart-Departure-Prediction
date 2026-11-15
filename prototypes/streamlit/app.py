@@ -1,6 +1,7 @@
 """Streamlit interface for the same verified direct-trip planner as the web app."""
 
 import time
+import os
 import math
 from html import escape
 
@@ -18,12 +19,18 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 theme()
+api_enabled = os.environ.get("LEAVENOW_API_CONFIGURED", "1") == "1"
 markup(
     '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE ARRIVAL PLANNER</div></div>'
 )
 markup(
     '<div class="ln-hero"><div class="ln-eyebrow">THE CITY IS MOVING. SO CAN YOU.</div><h1>Less waiting.<br><span>More going.</span></h1><p>Your nearest stop. The right bus. A little more time for everything else.</p></div>'
 )
+
+if not api_enabled:
+    st.warning(
+        "Live arrivals are temporarily unavailable. You can explore the map and sample locations while the service is being configured."
+    )
 
 
 def apply_preset(reverse=False):
@@ -69,6 +76,11 @@ def choose_stop(key, label):
             key=key + "_query",
         )
         submitted = st.form_submit_button("Search stops")
+    if submitted and not api_enabled:
+        st.info(
+            "Stop search is temporarily unavailable. Choose Coordinates or try a sample location."
+        )
+        return None
     if submitted:
         try:
             st.session_state[key + "_matches"] = cached_search(query)
@@ -195,7 +207,7 @@ if st.session_state.get("planned_trip") and st.session_state["planned_trip"] != 
 if st.button(
     "Find my next bus",
     type="primary",
-    disabled=origin is None or destination is None,
+    disabled=not api_enabled or origin is None or destination is None,
     use_container_width=True,
 ):
     st.session_state["planned_trip"] = payload
@@ -204,7 +216,7 @@ if st.button(
 @st.fragment(run_every="60s" if auto_refresh else None)
 def show_results():
     trip = st.session_state.get("planned_trip")
-    if not trip:
+    if not trip or not api_enabled:
         markup(
             '<div class="ln-map-heading"><b>Your city. Your next move.</b><span>DRAG TO EXPLORE · SCROLL TO ZOOM</span></div>'
         )

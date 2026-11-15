@@ -59,6 +59,20 @@ class AppTests(unittest.TestCase):
             next(b for b in app.button if b.label == "Find my next bus").disabled
         )
 
+    def test_unconfigured_public_service_disables_live_calls(self):
+        with patch.dict("os.environ", {"LEAVENOW_API_CONFIGURED": "0"}), patch(
+            "client.api_request"
+        ) as request:
+            app = ready_app()
+            self.assertFalse(app.exception)
+            self.assertTrue(
+                next(b for b in app.button if b.label == "Find my next bus").disabled
+            )
+            self.assertTrue(
+                any("temporarily unavailable" in w.value for w in app.warning)
+            )
+            request.assert_not_called()
+
     def test_presets_and_swap_update_locations(self):
         app = AppTest.from_file(str(APP), default_timeout=20).run()
         next(b for b in app.button if b.label == "↗ East → Park").click().run()
