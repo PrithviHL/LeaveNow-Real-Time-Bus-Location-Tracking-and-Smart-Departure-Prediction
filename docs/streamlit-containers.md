@@ -4,9 +4,11 @@ This is an active Streamlit prototype in `prototypes/streamlit`, separate from t
 
 ## Interface
 
-The Streamlit UI includes a dark transit theme, interactive day/night map, hoverable location markers, journey tickets, and a step-by-step trip timeline. **East → Park** and **Park → East** prefill real example coordinates without inventing departures. **Swap locations** reverses the selected start and destination. The initial and no-direct-trip screens still show the map. Changing locations clears the previous planned trip; pressing the main search button requests live data again.
+The Streamlit UI includes a dark transit theme, interactive day/night map, hoverable location markers, journey tickets, and a step-by-step trip timeline. **East → Park** and **Park → East** prefill real example coordinates without inventing departures. **Swap locations** reverses the selected start and destination. The initial and no-result screens still show the map. Changing locations clears the previous planned trip; pressing the main search button requests live data again.
 
 `.streamlit/config.toml` supplies the base theme. `presentation.py` holds escaped HTML components and Pydeck map rendering; `theme.css` contains responsive styling and respects reduced-motion preferences. CSS, map, and theme files are explicitly copied into the Docker image. Google Fonts and the map basemap require external browser access; system fonts are the fallback.
+
+Google sign-in is required. The signed-in account menu is in the header; signed-out sessions stop before planner controls are rendered. Both stop fields use instant searchable dropdowns backed by a cached stop catalog. See [Google configuration](google-sign-in.md); a local/container UI without its secrets file remains locked.
 
 ## Services
 
@@ -19,7 +21,7 @@ Browser (GPS, stop search, coordinates)
 
 Only the Node API receives `RTS_API_KEY`. Streamlit reads `LEAVENOW_API_URL` server-side. GPS uses the `streamlit-geolocation` component and requires a user click plus browser permission. Search and coordinates are available when GPS is unavailable. Maps and the geolocation component require actual browser verification; Python AppTest checks server-rendered UI logic.
 
-The same direct-trip constraints apply: nearby stops at each end, matching live trip and vehicle, downstream destination ETA, fresh predictions, sufficient walking time, and a two-minute boarding buffer. Direct and one-transfer timetable journeys, future departure/arrival controls, and live overlays are described in [timetable routing](timetable-routing.md).
+The live direct-trip overlay checks include: nearby stops at each end, matching live trip and vehicle, downstream destination ETA, fresh predictions, sufficient walking time, and a two-minute boarding buffer. Direct and one-transfer timetable journeys, future departure/arrival controls, and live overlays are described in [timetable routing](timetable-routing.md).
 
 ## Docker Compose
 

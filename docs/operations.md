@@ -41,7 +41,7 @@ The Streamlit variant adds explicitly configured container service hosts while r
 
 ## Shared hosting
 
-The listener deliberately binds to 127.0.0.1. Host/Origin checks only allow local access. This repository is not configured for public production deployment. Shared hosting needs a reviewed reverse proxy/HTTPS and host configuration, request/rate limits, monitoring, secrets management, and a capacity-appropriate map/data provider. Browser geolocation requires HTTPS outside localhost.
+The listener deliberately binds to 127.0.0.1. Host/Origin checks only allow local access. The direct Node listener is intended for local development. The separate [public Render profile](public-deployment.md) is deployed with a Google-protected Streamlit UI and loopback-only API. Shared hosting needs a reviewed reverse proxy/HTTPS and host configuration, request/rate limits, monitoring, secrets management, and a capacity-appropriate map/data provider. Browser geolocation requires HTTPS outside localhost.
 
 The stop search uses RTS data rather than the public Nominatim geocoder. OpenStreetMap map tiles are loaded only for the active view, without prefetch or offline downloads; browser HTTP caching and visible attribution are preserved. Follow the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) and choose a commercial/self-hosted tile service if traffic requires it.
 

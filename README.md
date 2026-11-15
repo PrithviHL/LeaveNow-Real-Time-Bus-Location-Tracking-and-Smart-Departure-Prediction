@@ -1,106 +1,122 @@
 # LeaveNow
 
-**Your next bus, figured out.** A trip planner for Rochester’s RTS network with live predictions, published timetables, and direct or one-transfer journeys. Choose a starting location and destination; LeaveNow finds nearby stops, checks live arrivals at both ends, and shows a catchable bus and when to leave.
+**Your next bus, figured out.** A Rochester RTS trip planner that combines published timetables with available live predictions to find nearby stops, direct or one-transfer journeys, and when to leave.
 
-**[Open the live Streamlit app](https://leavenow-prithvihl.onrender.com)**
+**[Open the live app](https://leavenow-prithvihl.onrender.com)** · [Routing rules](docs/timetable-routing.md) · [Deployment](docs/public-deployment.md) · [Google sign-in](docs/google-sign-in.md)
 
-The main Streamlit interface offers **Leave now**, **Depart at**, and **Arrive by**, with distinct **Live**, **Scheduled**, and **Live + Scheduled** labels. See [timetable routing](docs/timetable-routing.md) for search limits, data refresh, and verification.
+The live Streamlit application runs from **`feature/streamlit-containers`**. The `main` branch retains the earlier direct-bus browser application. Use this branch for the current deployed UI and routing features.
 
-## Quick start
+## Use the live app
 
-Requires **Node.js 22.9+** and an RTS API key. There are no npm dependencies to install. Compile timetable data with `npm run gtfs:import` (Python 3.12 recommended).
+1. Continue with Google. After login, **Your account** is in the top-right header and includes **Sign out**.
+2. For either location, choose **Search a stop** and type part of a name or stop ID. Select a suggestion from the searchable dropdown. The starting point also supports browser GPS; coordinates are available for either end.
+3. Choose **Leave now**, **Depart at**, or **Arrive by**. Set your walking allowance and enable or disable a transfer; choose a connection buffer when transfers are enabled.
+4. Select **Find my next bus**. Review the walking legs, bus legs, boarding/alighting stops, transfer allowance, final arrival, and map.
+5. Check the timing label: **Live**, **Scheduled**, or **Live + Scheduled**. These indicate the source of the displayed times, not a guarantee that a service will run on time.
+
+Suggestions cover **RTS stop names**, not general street-address geocoding. Browser GPS requires permission. The map and timeline provide estimates; dotted connections are not street-following directions or actual bus route geometry. Results depend on the selected service date and provider availability.
+
+### Example inputs
+
+| Starting stop | Destination | Useful check |
+| --- | --- | --- |
+| East & Alexander | Park & Berkeley | Nearby stops and a short journey |
+| Airport & Terminal Lower Level | Park & Berkeley | Transfer-enabled vs direct-only results |
+| RTS Transit Center | Strong Memorial Hospital | Downtown/hospital journey and future time controls |
+
+Use a future weekday during service hours to test **Depart at** and **Arrive by**. These are test inputs, not promises of a particular bus or connection. Live predictions usually cover a shorter window than the timetable.
+
+## Features and scope
+
+- Google sign-in, account menu, logout, and a sign-in gate before the planner.
+- Searchable stop suggestions in both location fields, current-location permission flow, coordinates, and sample-trip presets.
+- Official RTS GTFS calendars, stop/trip order, and direct or **one-transfer** timetable routing.
+- Transfer walking time, boarding allowance, minimum connection buffers, and final walking time.
+- Fresh RTS predictions applied only to matching GTFS trip identities, with connection and arrival-deadline rechecks.
+- Separate Live/Scheduled labels, multi-leg timelines, journey cards, maps, manual refresh, and Leave-now auto-refresh.
+- A private Node API in the hosted container; the RTS key is kept out of browser code and the Streamlit child's environment.
+
+Search is bounded: departures up to 36 hours forward; Arrive-by lookback up to eight hours excluding departures you can no longer catch; date controls cover the next 14 days within published service dates. Walking uses straight-line distance × 1.25 at 80 meters/minute, plus a two-minute boarding buffer. A no-result message means no journey was verified within these limits, not that every possible transit journey is impossible.
+
+The GTFS artifact is built during deployment and must be refreshed before its service dates expire. This app does not train a bus-location prediction model or guarantee future positions. The original HTML browser interface remains a direct-only compatibility view. [Full timetable rules and limits](docs/timetable-routing.md).
+
+## Local setup
+
+Requires Node.js 22.9+, Git, Python 3.12, an RTS credential, and Google OAuth configuration for the Streamlit interface.
 
 ```sh
+git clone --branch feature/streamlit-containers https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction.git
+cd LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction
+# On a new checkout only; keep any existing .env.
 cp .env.example .env
-# Set RTS_API_KEY in .env.
-npm run gtfs:import
+# Set RTS_API_KEY in the ignored .env.
+python3 scripts/import-gtfs.py
 npm start
 ```
 
-Open [localhost:3001](http://localhost:3001). This checkout already has a local `.env` configured. Do not overwrite it unless you intend to replace the credential.
+There are no Node runtime packages to install. The API and original browser interface run at [localhost:3001](http://localhost:3001). In a second terminal:
 
-On the current Codex machine, `./run.sh` also works when Node is absent from the shell path. It uses the bundled Node runtime as a fallback. Keep the process running while using the app; press Ctrl+C to stop it.
-
-## Using the app
-
-1. Click the location button to use device GPS, search for an RTS stop or intersection, enter `latitude, longitude`, or choose a starting pin on the map.
-2. Choose the destination in the same way. Search results are RTS stop names, not a general address directory. For another location, place a map pin.
-3. Set the walking allowance at each end and click **Find my next bus**.
-4. Read the recommended route, boarding/alighting stops, live arrival times, and leave-by time. The closest physical stop is shown separately if the recommendation uses another nearby stop.
-
-Search and location permission failures have manual fallbacks. **Try a trip from East & Alexander** fills an example Rochester journey using current API stop data. Example results depend on which buses are actually running.
-
-## What is included
-
-- Responsive trip planner, interactive map, current-location permission flow, and keyboard-accessible stop selection
-- Current RTS stops and vehicle positions, cached server-side
-- Direct-trip verification using matching trip identity and downstream arrival times, with vehicle agreement when IDs are available
-- Walking allowance, boarding buffer, stale-feed filtering, nearby departures, and explicit no-direct-trip states
-- Automatic arrival refresh while a planned trip is visible, plus manual refresh
-- Backend-only API credential, local-only listener, origin validation, request-size limits, and generic upstream errors
-- Automated planner, API client, HTTP, and configuration tests; CI for Node 22 and 24
-
-## Repository structure
-
-```text
-src/server/       HTTP application, configuration, RTS client, trip planning
-public/           Browser interface and vendored Leaflet 1.9.4 assets
-scripts/          Syntax and hardcoded-credential checks
-tests/           Deterministic unit and HTTP integration tests
-docs/            Architecture, API reference, operations, validation, archive
- prototypes/      Streamlit interface and Python tests
-deploy/          Dockerfiles and Kubernetes manifests
-legacy/          Original research notebooks and Streamlit submission
-.github/          Continuous integration
+```sh
+python3.12 -m venv .venv
+.venv/bin/pip install -r prototypes/streamlit/requirements.txt
+LEAVENOW_API_URL=http://127.0.0.1:3001 .venv/bin/python -m streamlit run prototypes/streamlit/app.py --server.port=8501
 ```
 
-The active application lives in `src/server` and `public`. Earlier project reports, models, and notebooks are retained for reference, not used by the new application. Historical claims about model accuracy, AWS, and Kubernetes are not claims about this implementation.
+Open [localhost:8501](http://localhost:8501). Configure the ignored `.streamlit/secrets.toml` and Google's localhost callback as described in [Google setup](docs/google-sign-in.md); the planner stays locked until sign-in is configured. `./run.sh` is an optional Node launcher for a machine with the bundled Codex runtime.
 
-## Public portfolio deployment
+## Render deployment
 
-The Render deployment profile keeps the RTS API private inside one container and stores credentials outside Git. A previously exposed key is explicitly blocked; live arrivals remain disabled until a replacement is configured in the hosting service. See [public deployment and credential security](docs/public-deployment.md).
+| Setting | Current deployment |
+| --- | --- |
+| Public URL | https://leavenow-prithvihl.onrender.com |
+| Source branch | `feature/streamlit-containers` |
+| Dockerfile | `deploy/docker/public.Dockerfile` |
+| Public process | Streamlit on the platform `PORT` |
+| Private API | Node on `127.0.0.1:3001` |
+| Health endpoint | `/_stcore/health` |
+| Google callback | `https://leavenow-prithvihl.onrender.com/oauth2callback` |
 
-## Streamlit prototype with Docker and Kubernetes
+The free Render service can sleep when idle. The service display name is `leavenow`; its actual public hostname still includes `prithvihl`. Use the verified URL above when sharing it, including on LinkedIn.
 
-An additional Streamlit interface is available in `prototypes/streamlit`. It reuses the existing Node planner. With Docker running and the local `.env` configured:
+Store `RTS_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_COOKIE_SECRET`, and `AUTH_REDIRECT_URI` in Render's environment settings. Preserve a stable random auth cookie secret. The supervisor writes Google's configuration to a private runtime-only file. Do not commit keys, cookies, or secret files. Deployment security details and the existing RTS credential policy are documented in [public deployment](docs/public-deployment.md).
+
+## Docker and Kubernetes
+
+The local Compose profile runs separate API and Streamlit containers:
 
 ```sh
 docker compose up --build --wait
 ```
 
-Open http://localhost:8501. Kubernetes manifests, a local kind workflow, native Python setup, security boundaries, and verification limits are documented in [Streamlit containers](docs/streamlit-containers.md). Docker/cluster execution must be validated on a machine or CI runner with those runtimes; having manifests alone is not a running deployment.
+Open [localhost:8501](http://localhost:8501). Authentication still needs its runtime secrets file; see the container and OAuth guides. The public Render profile uses one supervised Docker container instead. Kubernetes manifests and a kind workflow are provided for local development/CI; Render is **not** running this app on a Kubernetes cluster you manage. [Container architecture, secrets, commands, and validation limits](docs/streamlit-containers.md).
 
-## Development
+## Validation
 
 ```sh
-npm run dev            # Restart the server after backend changes
-npm run check          # Syntax validation and source credential scan
-npm test               # Deterministic tests, no RTS credential/network required
-npm run test:coverage  # Same tests with Node’s coverage report
+npm run check
+npm test
+# After installing Python requirements:
+.venv/bin/python -m unittest discover -s prototypes/streamlit/tests
 ```
 
-Static assets reload on browser refresh. The RTS provider is mocked in tests. A real live-data check is documented separately; it is not part of CI.
+Tests cover routing, service calendars, overnight trips, live overlay checks, API boundaries, credential handling, authentication UI, stop selection, and presentation. Provider data is mocked in deterministic tests. Browser GPS, actual Google login, and live arrival correctness require separate live checks; a healthy process alone does not verify them.
 
-## Scope and limitations
+## Project map and documentation
 
-The Streamlit planner supports **direct journeys and up to one transfer** using the current RTS GTFS feed. Departures are searched up to 36 hours forward; Arrive by looks back up to eight hours while excluding trips you can no longer catch. Future controls cover the next 14 days within published service dates. The original browser interface keeps a direct-only view. No result means none was found within these bounded limits, not that all transit is impossible.
+| Path | Purpose |
+| --- | --- |
+| `src/server/` | Node API, RTS client, GTFS schedules, and routing |
+| `prototypes/streamlit/` | Current public UI, account controls, and Python tests |
+| `scripts/import-gtfs.py` | Official feed import and compact timetable build |
+| `public/` | Original direct-only HTML app and vendored Leaflet |
+| `deploy/` | Public supervisor, Dockerfiles, and development Kubernetes manifests |
+| `tests/` | Node tests |
+| `legacy/` | Archived research materials; not the current runtime |
 
-Walking is an estimate: straight-line distance × 1.25, at 80 meters/minute, with a two-minute boarding buffer. Dotted map lines are connection guides, not street-following walking or bus routes. Use the boarding-stop walking-directions link and check crossings. Results and trip times can change; verify before travel.
-
-Normal startup binds the API to `127.0.0.1`. The public Render profile serves Streamlit over HTTPS while keeping this API on loopback; it has no account system. Read [operations](docs/operations.md) before adapting it for shared hosting.
-
-## Documentation
-
-- [Architecture and planning rules](docs/architecture.md)
-- [API reference](docs/api.md)
-- [Configuration and operations](docs/operations.md)
-- [Validation and known limits](docs/testing.md)
+- [Architecture](docs/architecture.md) · [API reference](docs/api.md)
+- [Timetable routing](docs/timetable-routing.md) · [Google sign-in](docs/google-sign-in.md)
+- [Public deployment](docs/public-deployment.md) · [Operations](docs/operations.md)
+- [Docker and Kubernetes](docs/streamlit-containers.md) · [Testing](docs/testing.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Change log](CHANGELOG.md)
 
-Live data is provided by [RTS](https://www.myrts.com/RGRTA-API). Maps use [OpenStreetMap](https://www.openstreetmap.org/copyright) data and tiles. Leaflet is redistributed under its included [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md).
-
-### Google sign-in
-
-The account panel supports Google sign-in and logout, with sign-in required to access the planner. Hosting credentials must be configured before login is enabled. See [Google sign-in setup](docs/google-sign-in.md) for the Google OAuth client, Render secrets, and local setup.
-
-Starting and destination stop fields include instant searchable dropdowns: type part of a stop name or its ID and select the matching option. Coordinates and browser geolocation remain available for locations outside the stop list.
+Data: [RTS](https://www.myrts.com/RGRTA-API). Maps: [OpenStreetMap](https://www.openstreetmap.org/copyright). The original HTML interface includes Leaflet under its [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md). Archived claims about model accuracy, AWS, or research deployments are not claims about the current application.
