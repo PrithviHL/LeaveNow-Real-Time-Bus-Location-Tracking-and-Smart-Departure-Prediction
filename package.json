@@ -1,0 +1,17 @@
+{
+  "name": "leavenow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Location-aware Rochester RTS bus departure planner",
+  "engines": {
+    "node": ">=22.9.0"
+  },
+  "scripts": {
+    "start": "node src/server/index.js",
+    "dev": "node --watch src/server/index.js",
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check.js",
+    "test:coverage": "node --test --experimental-test-coverage tests/*.test.js"
+  }
+}
