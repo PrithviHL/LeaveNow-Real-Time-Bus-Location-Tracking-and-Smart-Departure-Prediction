@@ -21,6 +21,8 @@ jobs:
         run: |
           docker compose up --build --wait --wait-timeout 180
           docker compose exec -T streamlit python -c 'from client import api_request; assert api_request("/api/health")["configured"]'
+      - name: Build public deployment profile
+        run: docker build -f deploy/docker/public.Dockerfile -t leavenow-public:ci .
       - name: Stop Compose
         if: always()
         run: docker compose down

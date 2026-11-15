@@ -1,7 +1,15 @@
 import { normalizeStop } from "./planner.js";
 export class TransitClient {
-  constructor(key, fetcher = fetch) {
+  constructor(
+    key,
+    fetcher = fetch,
+    { requestsPerMinute = 60, now = Date.now } = {},
+  ) {
     this.key = key;
+    this.requestsPerMinute = requestsPerMinute;
+    this.now = now;
+    this.windowStart = now();
+    this.requestsInWindow = 0;
     this.fetcher = fetcher;
     this.cache = new Map();
     this.pending = new Map();
@@ -15,6 +23,15 @@ export class TransitClient {
       cached = this.cache.get(cacheKey);
     if (cached && Date.now() < cached.expires) return cached.data;
     if (this.pending.has(cacheKey)) return this.pending.get(cacheKey);
+    if (this.now() - this.windowStart >= 60_000) {
+      this.windowStart = this.now();
+      this.requestsInWindow = 0;
+    }
+    if (this.requestsInWindow >= this.requestsPerMinute)
+      throw new Error(
+        "Live transit request limit reached. Please wait a minute and retry.",
+      );
+    this.requestsInWindow++;
     const work = (async () => {
       const url = new URL(`https://api.rgrta.com/${endpoint}`);
       url.searchParams.set("key", this.key);

@@ -54,3 +54,16 @@ test("ignores malformed prediction and vehicle entries", async () => {
   assert.equal((await client.predictions("1")).length, 1);
   assert.equal((await client.vehicles()).length, 1);
 });
+
+test("upstream rate budget allows cached requests but rejects excess new requests", async () => {
+  let time = 0;
+  const client = new TransitClient("test", async () => Response.json([]), {
+    requestsPerMinute: 1,
+    now: () => time,
+  });
+  await client.predictions("1");
+  await client.predictions("1");
+  await assert.rejects(() => client.predictions("2"), /request limit/);
+  time = 60_001;
+  await client.predictions("2");
+});
