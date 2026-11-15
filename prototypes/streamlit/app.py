@@ -20,6 +20,7 @@ from client import (
 )
 
 from presentation import theme, markup, map_view, ticket, timeline, empty_card
+from authentication import account_controls
 
 st.set_page_config(
     page_title="LeaveNow · Your next move",
@@ -35,6 +36,8 @@ markup(
 markup(
     '<div class="ln-hero"><div class="ln-eyebrow">THE CITY IS MOVING. SO CAN YOU.</div><h1>Less waiting.<br><span>More going.</span></h1><p>Your nearest stop. The right bus. A little more time for everything else.</p></div>'
 )
+
+account_controls()
 
 if not api_enabled:
     st.warning(

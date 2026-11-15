@@ -9,6 +9,8 @@ import secrets
 import subprocess
 import sys
 import time
+import tempfile
+from urllib.parse import urlparse
 from urllib.error import URLError
 from urllib.request import urlopen, Request
 
@@ -38,7 +40,25 @@ def child_environments(env):
         PORT="3001",
         ALLOWED_HOSTS="",
     )
-    ui_env = {k: v for k, v in env.items() if k != "RTS_API_KEY"}
+    for key in (
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "AUTH_COOKIE_SECRET",
+        "AUTH_REDIRECT_URI",
+    ):
+        api_env.pop(key, None)
+    ui_env = {
+        k: v
+        for k, v in env.items()
+        if k
+        not in (
+            "RTS_API_KEY",
+            "GOOGLE_CLIENT_ID",
+            "GOOGLE_CLIENT_SECRET",
+            "AUTH_COOKIE_SECRET",
+            "AUTH_REDIRECT_URI",
+        )
+    }
     ui_env.update(
         LEAVENOW_API_URL="http://127.0.0.1:3001",
         LEAVENOW_API_CONFIGURED=(
@@ -55,8 +75,57 @@ def child_environments(env):
     return port, api_env, ui_env
 
 
+def configure_google_auth(env, root=ROOT):
+    """Create a private runtime-only Streamlit secrets file from hosting secrets."""
+    keys = (
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "AUTH_COOKIE_SECRET",
+        "AUTH_REDIRECT_URI",
+    )
+    values = [env.get(key, "").strip() for key in keys]
+    if not any(values):
+        return False
+    if not all(values):
+        raise ValueError("Google authentication configuration is incomplete.")
+    client_id, client_secret, cookie_secret, redirect = values
+    parsed = urlparse(redirect)
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.path != "/oauth2callback"
+        or parsed.query
+        or parsed.fragment
+        or parsed.username
+    ):
+        raise ValueError("AUTH_REDIRECT_URI must be an HTTPS /oauth2callback URL.")
+    if len(cookie_secret) < 32:
+        raise ValueError(
+            "AUTH_COOKIE_SECRET must contain at least 32 random characters."
+        )
+    config = dict(
+        redirect_uri=redirect,
+        cookie_secret=cookie_secret,
+        client_id=client_id,
+        client_secret=client_secret,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    )
+    directory = root / ".streamlit"
+    directory.mkdir(parents=True, exist_ok=True)
+    # JSON strings are valid TOML basic strings; never interpolate raw secret values.
+    with tempfile.NamedTemporaryFile(mode="w", dir=directory, delete=False) as handle:
+        handle.write(
+            "[auth]\n"
+            + "".join(f"{key} = {json.dumps(value)}\n" for key, value in config.items())
+        )
+        path = Path(handle.name)
+    path.replace(directory / "secrets.toml")
+    return True
+
+
 def main():
     port, api_env, ui_env = child_environments(os.environ)
+    configure_google_auth(os.environ)
     children = []
     stopping = False
 

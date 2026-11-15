@@ -22,3 +22,4 @@
 !security/blocked-credential-fingerprints.json
 !scripts/
 !scripts/import-gtfs.py
+!prototypes/streamlit/authentication.py

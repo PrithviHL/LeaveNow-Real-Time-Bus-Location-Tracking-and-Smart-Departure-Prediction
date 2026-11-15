@@ -98,3 +98,7 @@ Normal startup binds the API to `127.0.0.1`. The public Render profile serves St
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Change log](CHANGELOG.md)
 
 Live data is provided by [RTS](https://www.myrts.com/RGRTA-API). Maps use [OpenStreetMap](https://www.openstreetmap.org/copyright) data and tiles. Leaflet is redistributed under its included [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md).
+
+### Google sign-in
+
+The account panel supports Google sign-in and logout, with guest access to the planner. Hosting credentials must be configured before login is enabled. See [Google sign-in setup](docs/google-sign-in.md) for the Google OAuth client, Render secrets, and local setup.
