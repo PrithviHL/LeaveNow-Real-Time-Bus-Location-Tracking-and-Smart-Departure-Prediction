@@ -1,0 +1,5 @@
+streamlit==1.25.0
+pandas==1.5.3
+geopy==2.3.0
+requests==2.31.0
+prometheus_client
