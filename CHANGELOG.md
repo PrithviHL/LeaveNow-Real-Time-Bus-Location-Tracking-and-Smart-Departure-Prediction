@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a Render-ready public container with loopback-only API, blocked exposed-key detection, and secret-free UI environment.
+- Added upstream request budgeting, history credential scanning, and deployment/security verification tests.
+
 - Redesigned Streamlit with a dark transit theme, route tickets, journey timeline, interactive day/night map, location presets, and location swapping.
 
 - Added a Streamlit trip-planning prototype sharing the Node routing API.

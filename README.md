@@ -51,6 +51,10 @@ legacy/          Original research notebooks and Streamlit submission
 
 The active application lives in `src/server` and `public`. Earlier project reports, models, and notebooks are retained for reference, not used by the new application. Historical claims about model accuracy, AWS, and Kubernetes are not claims about this implementation.
 
+## Public portfolio deployment
+
+The Render deployment profile keeps the RTS API private inside one container and stores credentials outside Git. A previously exposed key is explicitly blocked; live arrivals remain disabled until a replacement is configured in the hosting service. See [public deployment and credential security](docs/public-deployment.md).
+
 ## Streamlit prototype with Docker and Kubernetes
 
 An additional Streamlit interface is available in `prototypes/streamlit`. It reuses the existing Node planner. With Docker running and the local `.env` configured:
