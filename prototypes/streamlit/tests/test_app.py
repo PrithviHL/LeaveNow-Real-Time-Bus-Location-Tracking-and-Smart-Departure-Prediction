@@ -95,6 +95,67 @@ class AppTests(unittest.TestCase):
             self.assertEqual(len(app.metric), 4)
             self.assertTrue(any(s.value == "10 Park" for s in app.subheader))
 
+    def test_travel_modes_and_transfer_controls_are_forwarded(self):
+        with patch("client.api_request", return_value=trip_fixture()) as request:
+            app = ready_app()
+            next(s for s in app.selectbox if s.label == "Travel time").set_value(
+                "Arrive by"
+            ).run()
+            next(b for b in app.button if b.label == "Find my next bus").click().run()
+            self.assertFalse(app.exception)
+            payload = request.call_args.args[1]
+            self.assertEqual(payload["mode"], "arrive_by")
+            self.assertEqual(payload["maxTransfers"], 1)
+            self.assertEqual(payload["transferBuffer"], 5)
+            self.assertIsInstance(payload["when"], int)
+
+    def test_transfer_timeline_and_scheduled_labels(self):
+        plan = trip_fixture()
+        j = plan["journeys"][0]
+        transfer = {"id": "hub", "name": "Transit Center", "lat": 43.16, "lon": -77.61}
+        j.update(
+            route="23 → 10",
+            headsign="Route 23 → Route 10",
+            transfers=1,
+            timingSource="scheduled",
+            timingLabel="Scheduled",
+            transferWaitMinutes=8,
+            connection={
+                "from": transfer,
+                "to": transfer,
+                "walkMinutes": 0,
+                "minimumSeconds": 300,
+            },
+        )
+        j["legs"] = [
+            {
+                "route": "23",
+                "boarding": j["boarding"],
+                "alighting": transfer,
+                "departsAt": j["departsAt"],
+                "arrivesAt": j["departsAt"] + 600000,
+                "timingSource": "scheduled",
+                "direction": "0",
+            },
+            {
+                "route": "10",
+                "boarding": transfer,
+                "alighting": j["alighting"],
+                "departsAt": j["departsAt"] + 1080000,
+                "arrivesAt": j["departsAt"] + 1500000,
+                "timingSource": "scheduled",
+                "direction": "1",
+            },
+        ]
+        with patch("client.api_request", return_value=plan):
+            app = ready_app()
+            next(b for b in app.button if b.label == "Find my next bus").click().run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any("Scheduled" in c.value for c in app.caption))
+            self.assertTrue(
+                any("Transfer · 8 min available" in m.value for m in app.markdown)
+            )
+
     def test_empty_and_api_failure_states(self):
         empty = {
             "checkedAt": int(time.time() * 1000),

@@ -398,7 +398,11 @@ function renderPlan(plan, selectedId = state.selectedJourneyId) {
     const top = el("div", "", "bus-top");
     top.append(
       el("span", `RTS ${best.route}`, "route-badge"),
-      el("span", "● LIVE PREDICTION", "live-caption"),
+      el(
+        "span",
+        best.timingLabel === "Scheduled" ? "◷ SCHEDULED" : "● LIVE PREDICTION",
+        "live-caption",
+      ),
     );
     card.append(top);
     card.append(el("h2", best.headsign));
@@ -564,6 +568,8 @@ async function submitPlan(background = false) {
         origin: state.origin,
         destination: state.destination,
         maxWalk: +$("#max-walk").value,
+        mode: "leave_now",
+        maxTransfers: 0,
       },
       planController.signal,
     );

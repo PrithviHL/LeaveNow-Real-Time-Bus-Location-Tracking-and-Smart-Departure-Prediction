@@ -4,11 +4,20 @@ import time
 import os
 import math
 from html import escape
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 from streamlit_geolocation import streamlit_geolocation
 
-from client import ApiError, api_request, clock_time, coordinate, search_stops
+from client import (
+    ApiError,
+    api_request,
+    clock_time,
+    coordinate,
+    search_stops,
+    travel_timestamp,
+)
 
 from presentation import theme, markup, map_view, ticket, timeline, empty_card
 
@@ -21,7 +30,7 @@ st.set_page_config(
 theme()
 api_enabled = os.environ.get("LEAVENOW_API_CONFIGURED", "1") == "1"
 markup(
-    '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE ARRIVAL PLANNER</div></div>'
+    '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
 )
 markup(
     '<div class="ln-hero"><div class="ln-eyebrow">THE CITY IS MOVING. SO CAN YOU.</div><h1>Less waiting.<br><span>More going.</span></h1><p>Your nearest stop. The right bus. A little more time for everything else.</p></div>'
@@ -201,19 +210,68 @@ max_walk = options.select_slider(
 auto_refresh = refresh_options.checkbox(
     "Refresh live results every 60 seconds", value=True
 )
-payload = {"origin": origin, "destination": destination, "maxWalk": max_walk}
+timing, connection_options = st.columns(2)
+travel_mode = timing.selectbox(
+    "Travel time", ["Leave now", "Depart at", "Arrive by"], key="travel_mode"
+)
+allow_transfer = connection_options.toggle("Allow one transfer", value=True)
+transfer_buffer = connection_options.select_slider(
+    "Minimum transfer buffer",
+    options=[3, 5, 8, 10],
+    value=5,
+    format_func=lambda n: f"{n} min",
+)
+mode = {"Leave now": "leave_now", "Depart at": "depart_at", "Arrive by": "arrive_by"}[
+    travel_mode
+]
+when = None
+time_valid = True
+if mode != "leave_now":
+    local_now = datetime.now(ZoneInfo("America/New_York"))
+    day_col, time_col = st.columns(2)
+    day = day_col.date_input(
+        "Travel date · Rochester",
+        value=local_now.date(),
+        min_value=local_now.date(),
+        max_value=(local_now + timedelta(days=14)).date(),
+    )
+    clock = time_col.time_input(
+        "Travel time · America/New_York",
+        value=(local_now + timedelta(minutes=30))
+        .time()
+        .replace(second=0, microsecond=0),
+        step=300,
+    )
+    try:
+        when = travel_timestamp(day, clock)
+    except ValueError as error:
+        st.error(str(error))
+        time_valid = False
+    st.caption(
+        "Scheduled times use the RTS timetable. Live predictions are overlaid only when the exact trip is available."
+    )
+payload = {
+    "origin": origin,
+    "destination": destination,
+    "maxWalk": max_walk,
+    "mode": mode,
+    "maxTransfers": 1 if allow_transfer else 0,
+    "transferBuffer": transfer_buffer,
+}
+if when is not None:
+    payload["when"] = when
 if st.session_state.get("planned_trip") and st.session_state["planned_trip"] != payload:
     st.session_state.pop("planned_trip", None)
 if st.button(
     "Find my next bus",
     type="primary",
-    disabled=not api_enabled or origin is None or destination is None,
+    disabled=not api_enabled or not time_valid or origin is None or destination is None,
     use_container_width=True,
 ):
     st.session_state["planned_trip"] = payload
 
 
-@st.fragment(run_every="60s" if auto_refresh else None)
+@st.fragment(run_every="60s" if auto_refresh and mode == "leave_now" else None)
 def show_results():
     trip = st.session_state.get("planned_trip")
     if not trip or not api_enabled:
@@ -227,7 +285,7 @@ def show_results():
         return
     st.button("Refresh arrivals now", key="refresh_arrivals")
     try:
-        with st.spinner("Matching live trips at nearby stops…"):
+        with st.spinner("Finding direct journeys and transfer connections…"):
             plan = api_request("/api/plan", trip)
     except ApiError as error:
         st.error(str(error))
@@ -245,6 +303,13 @@ def show_results():
         markup(
             f'<div class="ln-summary"><b>⌖ {escape(nearest["name"])}</b><span>{escape(distance_label)}</span></div>'
         )
+    if plan.get("liveStatus"):
+        st.caption(plan["liveStatus"])
+    if plan.get("feed"):
+        feed = plan["feed"]
+        st.caption(
+            f"RTS timetable: {feed['version']} · service through {feed.get('endDate', 'unknown')}"
+        )
     journeys = plan["journeys"]
     if not journeys:
         reason = (
@@ -254,7 +319,7 @@ def show_results():
         st.warning(reason, icon="🕒")
         map_view(trip["origin"], trip["destination"], light=light_map)
         st.caption(
-            "Try the reverse preset, increase your walking allowance, or check the official timetable for later service."
+            "Try Depart at or Arrive by, increase the walking allowance, or allow a transfer. Results are limited to the published feed dates."
         )
         if plan.get("departures"):
             st.subheader("Nearby departures · destination not verified")
@@ -276,18 +341,22 @@ def show_results():
     if st.session_state.get("journey_choice", 0) >= len(journeys):
         st.session_state["journey_choice"] = 0
     selected = st.selectbox(
-        "Direct journey",
+        "Journey options",
         range(len(journeys)),
-        format_func=lambda i: f"Route {journeys[i]['route']} · {clock_time(journeys[i]['departsAt'])} · {journeys[i]['boarding']['name']}",
+        format_func=lambda i: f"{journeys[i]['timingLabel'] if 'timingLabel' in journeys[i] else 'Live'} · {journeys[i]['route']} · {clock_time(journeys[i]['departsAt'])} · {journeys[i].get('transfers', 0)} transfer(s)",
         key="journey_choice",
     )
     journey = journeys[selected]
     st.subheader(journey["headsign"])
+    label = journey.get("timingLabel", "Live")
+    st.caption(
+        f"{label} · {journey.get('transfers', 0)} transfer(s) · arrive at destination {clock_time(journey['destinationAt'])}"
+    )
     ticket(journey)
     bus, leave, walk, arrive = st.columns(4)
     bus.metric(
-        "Next bus",
-        f"{max(0, math.ceil((journey['departsAt'] / 1000 - time.time()) / 60))} min",
+        "Departure",
+        clock_time(journey["departsAt"]),
     )
     leave.metric("Leave by", clock_time(journey["leaveAt"]))
     walk.metric("Estimated walk to stop", f"{journey['walkMinutes']} min")
@@ -306,10 +375,10 @@ def show_results():
 show_results()
 with st.expander("How this prototype works"):
     st.write(
-        "The Streamlit service calls the same Node API as the web app. It never receives the RTS API key. A recommendation requires the same live trip at both stops, the destination after boarding, and enough walking time plus a two-minute buffer."
+        "The Streamlit service calls the private Node API and never receives the RTS key. Published timetable stop sequences and service calendars determine scheduled journeys. Fresh live predictions are used only for the exact matching trip, and all walking/transfer buffers are checked again after updates."
     )
     st.write(
-        "Direct buses only, within the current live prediction window. Walking uses straight-line distance with a 25% allowance at 80 m/min. Transfers and street routing are not included. Locations stay in your Streamlit session and are not written to disk; shared hosting still needs HTTPS, access/rate controls, and privacy review."
+        "Timetable routing supports direct journeys and one transfer, Leave now / Depart at / Arrive by, service calendars and holiday exceptions. Transfer walks are limited to 400 meters and your selected walking allowance. The selected connection buffer and any longer GTFS minimum are enforced. Scheduled connections are not guarantees; check changes before travel. Walking is estimated rather than street-routed. Locations remain in session memory, not a database."
     )
 
 markup(

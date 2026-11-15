@@ -33,7 +33,21 @@ def map_view(origin=None, destination=None, journey=None, light=False):
                     "color": color,
                 }
             )
-    if journey:
+    if journey and journey.get("legs"):
+        for leg in journey["legs"]:
+            for stop, label in [
+                (leg["boarding"], "Board here"),
+                (leg["alighting"], "Get off here"),
+            ]:
+                points.append(
+                    {
+                        "position": [stop["lon"], stop["lat"]],
+                        "label": stop["name"],
+                        "detail": label,
+                        "color": [101, 178, 255],
+                    }
+                )
+    elif journey:
         for stop, label in [
             (journey["boarding"], "Board here"),
             (journey["alighting"], "Get off here"),
@@ -63,12 +77,24 @@ def map_view(origin=None, destination=None, journey=None, light=False):
     if journey and origin and destination:
         connections = [
             {
-                "path": [
-                    [origin["lon"], origin["lat"]],
-                    [journey["boarding"]["lon"], journey["boarding"]["lat"]],
-                    [journey["alighting"]["lon"], journey["alighting"]["lat"]],
-                    [destination["lon"], destination["lat"]],
-                ],
+                "path": [[origin["lon"], origin["lat"]]]
+                + [
+                    point
+                    for leg in journey.get(
+                        "legs",
+                        [
+                            {
+                                "boarding": journey["boarding"],
+                                "alighting": journey["alighting"],
+                            }
+                        ],
+                    )
+                    for point in [
+                        [leg["boarding"]["lon"], leg["boarding"]["lat"]],
+                        [leg["alighting"]["lon"], leg["alighting"]["lat"]],
+                    ]
+                ]
+                + [[destination["lon"], destination["lat"]]],
                 "label": "Connection guide",
                 "detail": "Not a street-following route",
             }
@@ -113,27 +139,58 @@ def map_view(origin=None, destination=None, journey=None, light=False):
 
 
 def ticket(journey):
+    label = escape(journey.get("timingLabel", "Live"))
+    transfer_label = f"{journey.get('transfers',0)} TRANSFER(S)"
     minutes = max(0, math.ceil((journey["departsAt"] / 1000 - time.time()) / 60))
+    countdown = f"{minutes} min" if minutes <= 120 else clock_time(journey["departsAt"])
+    countdown_caption = "until your bus" if minutes <= 120 else "departure time"
     markup(
-        f"""<div class="ln-ticket"><div class="ln-ticket-top"><span class="ln-route">RTS {escape(str(journey["route"]))}</span><span class="ln-ticket-status">VERIFIED DIRECT TRIP</span></div><h2>{escape(journey["headsign"])}</h2><div class="ln-countdown">{minutes} min<span>until your bus</span></div><div class="ln-leave"><b>↗ Leave by {clock_time(journey["leaveAt"])}</b><span>{journey["walkMinutes"]} min walk + 2 min boarding buffer</span></div></div>"""
+        f"""<div class="ln-ticket"><div class="ln-ticket-top"><span class="ln-route">RTS {escape(str(journey["route"]))}</span><span class="ln-ticket-status">{label} · {transfer_label}</span></div><h2>{escape(journey["headsign"])}</h2><div class="ln-countdown">{countdown}<span>{countdown_caption}</span></div><div class="ln-leave"><b>↗ Leave by {clock_time(journey["leaveAt"])}</b><span>{journey["walkMinutes"]} min walk + 2 min boarding buffer</span></div></div>"""
     )
 
 
 def timeline(journey):
-    steps = [
-        ("01", "Walk to your stop", journey["boarding"]["name"]),
-        (
-            "02",
-            f"Board at {clock_time(journey['departsAt'])}",
-            f"Route {journey['route']} · {journey['direction']}",
-        ),
-        (
-            "03",
-            f"Off at {clock_time(journey['arrivesAt'])}",
-            journey["alighting"]["name"],
-        ),
-        ("04", f"{journey['finalWalkMinutes']} min final walk", "You’ve arrived."),
-    ]
+    if journey.get("legs"):
+        steps = [("01", "Walk to your stop", journey["boarding"]["name"])]
+        for i, leg in enumerate(journey["legs"]):
+            steps.append(
+                (
+                    str(len(steps) + 1).zfill(2),
+                    f"{clock_time(leg['departsAt'])} · Route {leg['route']}",
+                    f"{leg['boarding']['name']} → {leg['alighting']['name']} · {leg.get('timingSource','scheduled').title()}",
+                )
+            )
+            if i < len(journey["legs"]) - 1:
+                connection = journey["connection"]
+                steps.append(
+                    (
+                        str(len(steps) + 1).zfill(2),
+                        f"Transfer · {journey['transferWaitMinutes']} min available",
+                        f"Walk about {connection['walkMinutes']} min to {connection['to']['name']}; required connection time {math.ceil(connection['minimumSeconds']/60)} min",
+                    )
+                )
+        steps.append(
+            (
+                str(len(steps) + 1).zfill(2),
+                f"{journey['finalWalkMinutes']} min final walk",
+                f"Destination around {clock_time(journey['destinationAt'])}",
+            )
+        )
+    else:
+        steps = [
+            ("01", "Walk to your stop", journey["boarding"]["name"]),
+            (
+                "02",
+                f"Board at {clock_time(journey['departsAt'])}",
+                f"Route {journey['route']} · {journey['direction']}",
+            ),
+            (
+                "03",
+                f"Off at {clock_time(journey['arrivesAt'])}",
+                journey["alighting"]["name"],
+            ),
+            ("04", f"{journey['finalWalkMinutes']} min final walk", "You’ve arrived."),
+        ]
     markup(
         '<div class="ln-timeline">'
         + "".join(
@@ -146,5 +203,5 @@ def timeline(journey):
 
 def empty_card(reason):
     markup(
-        f'<div class="ln-empty"><div class="ln-empty-icon">◷</div><h3>No direct bus right now.</h3><p>{escape(reason)}</p><small>This is a live-window result, not a full-day timetable.</small></div>'
+        f'<div class="ln-empty"><div class="ln-empty-icon">◷</div><h3>No journey in these limits.</h3><p>{escape(reason)}</p><small>Try another time, a wider walking limit, or allow one transfer.</small></div>'
     )

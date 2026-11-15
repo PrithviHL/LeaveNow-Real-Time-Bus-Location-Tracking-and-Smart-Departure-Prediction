@@ -78,3 +78,16 @@ def clock_time(timestamp):
         .strftime("%I:%M %p")
         .lstrip("0")
     )
+
+
+def travel_timestamp(day, clock):
+    """Convert a Rochester wall time to UTC and reject nonexistent DST times."""
+    zone = ZoneInfo("America/New_York")
+    value = datetime.combine(day, clock).replace(tzinfo=zone)
+    if datetime.fromtimestamp(value.timestamp(), zone).replace(
+        tzinfo=None
+    ) != value.replace(tzinfo=None):
+        raise ValueError(
+            "That local time does not exist because of the daylight-saving clock change."
+        )
+    return int(value.timestamp() * 1000)

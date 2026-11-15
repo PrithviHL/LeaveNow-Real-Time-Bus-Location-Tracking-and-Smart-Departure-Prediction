@@ -7,7 +7,14 @@ from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from client import ApiError, api_request, clock_time, coordinate, search_stops
+from client import (
+    ApiError,
+    api_request,
+    clock_time,
+    coordinate,
+    search_stops,
+    travel_timestamp,
+)
 
 
 class ClientTests(unittest.TestCase):
@@ -19,6 +26,15 @@ class ClientTests(unittest.TestCase):
 
     def test_timezone_conversion(self):
         self.assertEqual(clock_time(1794697200000), "6:00 PM")
+
+    def test_rochester_travel_controls_handle_timezone_and_invalid_dst_time(self):
+        from datetime import date, time
+
+        self.assertEqual(
+            travel_timestamp(date(2026, 11, 16), time(8, 0)), 1794834000000
+        )
+        with self.assertRaises(ValueError):
+            travel_timestamp(date(2026, 3, 8), time(2, 30))
 
     def test_payload_and_response(self):
         reply = io.BytesIO(b'{"ok":true}')
