@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 from geopy.distance import geodesic
@@ -17,15 +18,15 @@ def get_nearest_bus_stop(user_lat, user_lon, bus_stops_data):
     user_location = (user_lat, user_lon)
     nearest_stop = None
     min_distance = float('inf')  # Initialize with a large number
-    
+
     # Iterate through each bus stop and calculate the distance
     for index, stop in bus_stops_data.iterrows():
         # Extract latitude and longitude from the dataset
         bus_stop_location = (stop['StopLat'], stop['StopLon'])
-        
+
         # Calculate the distance between the user's location and the bus stop
         distance = geodesic(user_location, bus_stop_location).meters  # Calculate distance
-        
+
         # Update the nearest bus stop if the current one is closer
         if distance < min_distance:
             min_distance = distance
@@ -62,20 +63,20 @@ def get_route_id(stop_id, data):
 # Function to get the real-time bus arrival using the stopid
 def get_bus_arrival(stop_id):
     url = "http://api.rgrta.com/rtpredictions"
-    api_key = "SET_RTS_API_KEY_IN_ENVIRONMENT"
+    api_key = os.environ.get("RTS_API_KEY", "")
     params = {"key": api_key, "stopid": stop_id}
-    
+
     try:
         rtpredictions = requests.get(url, params=params)
         rtpredictions.raise_for_status()  # Raises an HTTPError for bad responses
         data = rtpredictions.json()
-        
+
         if isinstance(data, list) and len(data) > 0:
             bus_info = []
             for prediction in data:
                 route_id = prediction.get("RouteId", None)
                 eta_str = prediction.get("ETA", None)
-                
+
                 if route_id and eta_str:
                     try:
                         eta_time = datetime.strptime(eta_str, "%m/%d/%Y %I:%M:%S %p")
@@ -117,7 +118,7 @@ if st.button("Submit"):
                 st.write(f"Distance to nearest bus stop: {distance:.2f} meters.")
             else:
                 st.write("No bus stops found.")
-        
+
         # Find the destination bus stop details if the user provides a name
         if destination_stop_name:
             destination_stop = get_bus_stop_by_name(destination_stop_name, bus_stops_data)
@@ -136,7 +137,7 @@ if st.button("Submit"):
         # Load the stop data from the JSON file and fetch the real-time arrival times
         file_path_stoparrivals = 'stoparrivals.json'  # Replace with actual path
         stop_data = load_json_data(file_path_stoparrivals)
-        
+
         if nearest_stop is not None:
             stop_id_input = nearest_stop['StopID']
             route_id_from_json = get_route_id(int(stop_id_input), stop_data)
@@ -172,7 +173,7 @@ if st.button("Submit"):
 
             if isinstance(arrival_time_info, list):
                 #st.write(f"Bus arrival times for StopID {nearest_stop['StopID']} (RouteID from JSON: {route_id_from_json}):")
-                
+
                 filtered_predictions = [info for info in arrival_time_info if info["RouteId"] == route_id_from_json]
 
                 if filtered_predictions:
