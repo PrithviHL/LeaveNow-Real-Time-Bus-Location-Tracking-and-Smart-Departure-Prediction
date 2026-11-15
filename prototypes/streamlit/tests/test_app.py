@@ -59,6 +59,20 @@ class AppTests(unittest.TestCase):
             next(b for b in app.button if b.label == "Find my next bus").disabled
         )
 
+    def test_presets_and_swap_update_locations(self):
+        app = AppTest.from_file(str(APP), default_timeout=20).run()
+        next(b for b in app.button if b.label == "↗ East → Park").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.155028)
+        self.assertEqual(app.session_state["resolved_destination"]["lat"], 43.148116)
+        next(b for b in app.button if b.label == "⇄ Swap locations").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.148116)
+        self.assertEqual(app.session_state["resolved_destination"]["lat"], 43.155028)
+        next(b for b in app.button if b.label == "↙ Park → East").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.148116)
+
     def test_successful_trip_renders_metrics(self):
         with patch("client.api_request", return_value=trip_fixture()):
             app = ready_app()

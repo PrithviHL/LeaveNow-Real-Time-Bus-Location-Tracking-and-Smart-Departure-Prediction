@@ -1,16 +1,59 @@
 """Streamlit interface for the same verified direct-trip planner as the web app."""
 
 import time
+import math
+from html import escape
 
 import streamlit as st
 from streamlit_geolocation import streamlit_geolocation
 
 from client import ApiError, api_request, clock_time, coordinate, search_stops
 
-st.set_page_config(page_title="LeaveNow · Streamlit", page_icon="🚌", layout="wide")
-st.title("🚌 LeaveNow")
-st.caption("ROCHESTER RTS · LIVE DIRECT-BUS PLANNER · STREAMLIT PROTOTYPE")
-st.write("Your location. Your destination. The next bus you can actually catch.")
+from presentation import theme, markup, map_view, ticket, timeline, empty_card
+
+st.set_page_config(
+    page_title="LeaveNow · Your next move",
+    page_icon="↗",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+theme()
+markup(
+    '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE ARRIVAL PLANNER</div></div>'
+)
+markup(
+    '<div class="ln-hero"><div class="ln-eyebrow">THE CITY IS MOVING. SO CAN YOU.</div><h1>Less waiting.<br><span>More going.</span></h1><p>Your nearest stop. The right bus. A little more time for everything else.</p></div>'
+)
+
+
+def apply_preset(reverse=False):
+    a, b = (43.155028, -77.594012), (43.148116, -77.578088)
+    if reverse:
+        a, b = b, a
+    for key, values in [("origin", a), ("destination", b)]:
+        st.session_state[key + "_method"] = "Coordinates"
+        st.session_state[key + "_lat"], st.session_state[key + "_lon"] = values
+    st.session_state.pop("planned_trip", None)
+
+
+def swap_locations():
+    a = st.session_state.get("resolved_origin")
+    b = st.session_state.get("resolved_destination")
+    if not a or not b:
+        return
+    for key, point in [("origin", b), ("destination", a)]:
+        st.session_state[key + "_method"] = "Coordinates"
+        st.session_state[key + "_lat"] = point["lat"]
+        st.session_state[key + "_lon"] = point["lon"]
+    st.session_state.pop("planned_trip", None)
+
+
+markup('<div class="ln-kicker">TAKE IT FOR A SPIN · REAL LOCATIONS, LIVE RESULTS</div>')
+preset_a, preset_b, spacer = st.columns([1, 1, 2])
+preset_a.button("↗ East → Park", on_click=apply_preset, use_container_width=True)
+preset_b.button(
+    "↙ Park → East", on_click=apply_preset, args=(True,), use_container_width=True
+)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -73,11 +116,14 @@ def choose_coordinates(key):
 
 left, right = st.columns(2)
 with left:
-    st.subheader("1 · Starting location")
+    markup(
+        '<div class="ln-kicker"><span class="ln-pin">●</span>01 / STARTING FROM</div>'
+    )
     origin_mode = st.radio(
         "Starting location method",
         ["Search a stop", "Use my location", "Coordinates"],
         horizontal=True,
+        key="origin_method",
     )
     if origin_mode == "Use my location":
         st.caption(
@@ -107,9 +153,14 @@ with left:
     else:
         origin = choose_stop("origin", "Starting stop")
 with right:
-    st.subheader("2 · Destination")
+    markup(
+        '<div class="ln-kicker"><span class="ln-pin destination">◆</span>02 / WHERE TO?</div>'
+    )
     destination_mode = st.radio(
-        "Destination method", ["Search a stop", "Coordinates"], horizontal=True
+        "Destination method",
+        ["Search a stop", "Coordinates"],
+        horizontal=True,
+        key="destination_method",
     )
     destination = (
         choose_coordinates("destination")
@@ -117,6 +168,17 @@ with right:
         else choose_stop("destination", "Destination stop")
     )
 
+st.session_state["resolved_origin"] = origin
+st.session_state["resolved_destination"] = destination
+swap, map_option, space = st.columns([1, 1, 2])
+swap.button(
+    "⇄ Swap locations",
+    on_click=swap_locations,
+    disabled=origin is None or destination is None,
+    use_container_width=True,
+)
+light_map = map_option.toggle("Day map", value=False)
+st.divider()
 options, refresh_options = st.columns(2)
 max_walk = options.select_slider(
     "Maximum estimated walk at each end",
@@ -131,7 +193,10 @@ payload = {"origin": origin, "destination": destination, "maxWalk": max_walk}
 if st.session_state.get("planned_trip") and st.session_state["planned_trip"] != payload:
     st.session_state.pop("planned_trip", None)
 if st.button(
-    "Find my next bus", type="primary", disabled=origin is None or destination is None
+    "Find my next bus",
+    type="primary",
+    disabled=origin is None or destination is None,
+    use_container_width=True,
 ):
     st.session_state["planned_trip"] = payload
 
@@ -140,7 +205,13 @@ if st.button(
 def show_results():
     trip = st.session_state.get("planned_trip")
     if not trip:
-        st.info("Choose your start and destination, then find your next bus.")
+        markup(
+            '<div class="ln-map-heading"><b>Your city. Your next move.</b><span>DRAG TO EXPLORE · SCROLL TO ZOOM</span></div>'
+        )
+        map_view(origin, destination, light=light_map)
+        markup(
+            '<div class="ln-nudge"><div class="ln-nudge-icon">↗</div><div><b>Good things are a bus ride away.</b><p>Choose your locations above, or try a preset. We’ll check real arrivals and tell you when to leave.</p></div></div>'
+        )
         return
     st.button("Refresh arrivals now", key="refresh_arrivals")
     try:
@@ -154,13 +225,24 @@ def show_results():
         st.warning("Some stops could not be checked. Results may be incomplete.")
     nearest = plan.get("nearestStop")
     if nearest:
-        st.info(
-            f"Closest stop: {nearest['name']} · {nearest['meters']} m away · about {nearest['walkMinutes']} min walk"
+        distance_label = (
+            "You’re at the stop"
+            if nearest["meters"] == 0
+            else f"{nearest['meters']} m away · about {nearest['walkMinutes']} min walk"
+        )
+        markup(
+            f'<div class="ln-summary"><b>⌖ {escape(nearest["name"])}</b><span>{escape(distance_label)}</span></div>'
         )
     journeys = plan["journeys"]
     if not journeys:
-        st.warning(
+        reason = (
             plan.get("reason") or "No verified catchable direct bus in the live window."
+        )
+        empty_card(reason)
+        st.warning(reason, icon="🕒")
+        map_view(trip["origin"], trip["destination"], light=light_map)
+        st.caption(
+            "Try the reverse preset, increase your walking allowance, or check the official timetable for later service."
         )
         if plan.get("departures"):
             st.subheader("Nearby departures · destination not verified")
@@ -189,38 +271,23 @@ def show_results():
     )
     journey = journeys[selected]
     st.subheader(journey["headsign"])
+    ticket(journey)
     bus, leave, walk, arrive = st.columns(4)
     bus.metric(
         "Next bus",
-        f"{max(0, int((journey['departsAt'] / 1000 - time.time()) / 60))} min",
+        f"{max(0, math.ceil((journey['departsAt'] / 1000 - time.time()) / 60))} min",
     )
     leave.metric("Leave by", clock_time(journey["leaveAt"]))
     walk.metric("Estimated walk to stop", f"{journey['walkMinutes']} min")
     arrive.metric("Reach destination", clock_time(journey["destinationAt"]))
-    st.write(
-        f"**Walk to:** {journey['boarding']['name']} (stop {journey['boarding']['id']})"
-    )
-    st.write(
-        f"**Board:** Route {journey['route']} at {clock_time(journey['departsAt'])} · {journey['direction']}"
-    )
-    st.write(
-        f"**Get off:** {journey['alighting']['name']} at {clock_time(journey['arrivesAt'])}"
-    )
-    st.write(
-        f"**Final walk:** about {journey['finalWalkMinutes']} min to your destination"
-    )
-    st.map(
-        [
-            trip["origin"],
-            trip["destination"],
-            {"lat": journey["boarding"]["lat"], "lon": journey["boarding"]["lon"]},
-            {"lat": journey["alighting"]["lat"], "lon": journey["alighting"]["lon"]},
-        ],
-        latitude="lat",
-        longitude="lon",
-    )
+    timeline(journey)
+    map_view(trip["origin"], trip["destination"], journey, light=light_map)
     st.caption(
-        "Map points show your start, destination and boarding/alighting stops. They do not represent a street route."
+        "Connection lines are a guide, not a street-following bus or walking route."
+    )
+    st.link_button(
+        "Walking directions to your boarding stop ↗",
+        f"https://www.google.com/maps/dir/?api=1&origin={trip['origin']['lat']},{trip['origin']['lon']}&destination={journey['boarding']['lat']},{journey['boarding']['lon']}&travelmode=walking",
     )
 
 
@@ -232,3 +299,7 @@ with st.expander("How this prototype works"):
     st.write(
         "Direct buses only, within the current live prediction window. Walking uses straight-line distance with a 25% allowance at 80 m/min. Transfers and street routing are not included. Locations stay in your Streamlit session and are not written to disk; shared hosting still needs HTTPS, access/rate controls, and privacy review."
     )
+
+markup(
+    '<div class="ln-footer"><span>BUILT FOR THE JOURNEY, NOT THE WAIT.</span><span>LEAVENOW / ROCHESTER</span></div>'
+)
