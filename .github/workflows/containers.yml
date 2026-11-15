@@ -1,0 +1,53 @@
+name: Streamlit containers
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RTS_API_KEY: ci-placeholder-not-a-real-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r prototypes/streamlit/requirements.txt
+      - run: python -m unittest discover -s prototypes/streamlit/tests -v
+      - name: Build images and run Compose health checks
+        run: |
+          docker compose up --build --wait --wait-timeout 180
+          docker compose exec -T streamlit python -c 'from client import api_request; assert api_request("/api/health")["configured"]'
+      - name: Stop Compose
+        if: always()
+        run: docker compose down
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.35.0
+      - name: Install kind
+        run: |
+          curl -fsSLo /tmp/kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64
+          chmod +x /tmp/kind
+      - name: Run prototype in a disposable Kubernetes cluster
+        run: |
+          /tmp/kind create cluster --name leavenow-ci --image kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0 --wait 120s
+          /tmp/kind load docker-image leavenow-api:prototype leavenow-streamlit:prototype --name leavenow-ci
+          kubectl apply -f deploy/kubernetes/namespace.yaml
+          kubectl -n leavenow create secret generic leavenow-rts --from-literal=RTS_API_KEY=ci-placeholder-not-a-real-key
+          kubectl apply -k deploy/kubernetes
+          kubectl -n leavenow rollout status deployment/leavenow-api --timeout=120s
+          kubectl -n leavenow rollout status deployment/leavenow-streamlit --timeout=180s
+          kubectl -n leavenow exec deployment/leavenow-streamlit -- python -c 'from client import api_request; assert api_request("/api/health")["configured"]'
+      - name: Show cluster diagnostics
+        if: failure()
+        run: |
+          kubectl -n leavenow get pods -o wide || true
+          kubectl -n leavenow describe pods || true
+          kubectl -n leavenow logs deployment/leavenow-api || true
+          kubectl -n leavenow logs deployment/leavenow-streamlit || true
+      - name: Delete disposable cluster
+        if: always()
+        run: test ! -x /tmp/kind || /tmp/kind delete cluster --name leavenow-ci
