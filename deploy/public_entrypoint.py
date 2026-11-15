@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -87,16 +87,42 @@ def main():
                 raise RuntimeError("The private API did not become ready.")
             try:
                 with urlopen(
-                    "http://127.0.0.1:3001/api/places?q=East%20Alexander", timeout=15
+                    "http://127.0.0.1:3001/api/vehicles", timeout=15
                 ) as response:
-                    matches = json.load(response).get("results", [])
+                    matches = json.load(response).get("vehicles", [])
                 print(
-                    f"RTS connection verified: stop search returned {len(matches)} matches.",
+                    f"RTS connection verified: live vehicle lookup returned {len(matches)} fresh positions.",
                     flush=True,
                 )
             except (URLError, OSError, ValueError):
                 print(
                     "RTS startup check unavailable; visitors can retry stop search later.",
+                    flush=True,
+                )
+            try:
+                probe = {
+                    "origin": {"lat": 43.128105, "lon": -77.6636},
+                    "destination": {"lat": 43.148116, "lon": -77.578088},
+                    "mode": "depart_at",
+                    "when": int(time.time() * 1000) + 3 * 3600_000,
+                    "maxWalk": 10,
+                    "maxTransfers": 1,
+                    "transferBuffer": 5,
+                }
+                request = Request(
+                    "http://127.0.0.1:3001/api/plan",
+                    data=json.dumps(probe).encode(),
+                    headers={"Content-Type": "application/json"},
+                )
+                with urlopen(request, timeout=30) as response:
+                    journeys = json.load(response).get("journeys", [])
+                print(
+                    f"Timetable routing startup check: {len(journeys)} journeys, {sum(j.get('transfers',0)>0 for j in journeys)} with transfers.",
+                    flush=True,
+                )
+            except (URLError, OSError, ValueError):
+                print(
+                    "Timetable routing startup check unavailable; provider and schedule details remain visible in the app.",
                     flush=True,
                 )
         else:

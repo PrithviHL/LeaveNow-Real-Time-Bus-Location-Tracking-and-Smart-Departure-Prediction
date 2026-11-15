@@ -20,3 +20,5 @@
 !deploy/public_entrypoint.py
 !security/
 !security/blocked-credential-fingerprints.json
+!scripts/
+!scripts/import-gtfs.py
