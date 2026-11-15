@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f6f5f0" />
+    <meta
+      name="description"
+      content="Find your nearest RTS stop, a bus that reaches your destination, and when to leave. Live bus arrivals in Rochester, New York."
+    />
+    <title>LeaveNow — Your next bus, figured out.</title>
+    <link rel="icon" href="/icon.svg" />
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="/vendor/leaflet/leaflet.js"></script>
+    <script defer src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/"
+        ><span class="brand-icon">↗</span>Leave<span>Now</span
+        ><span class="brand-period">.</span></a
+      >
+      <div class="header-city">
+        <span class="live-dot"></span> ROCHESTER, NY
+        <span class="header-divider">/</span> RTS TRANSIT
+      </div>
+      <button id="about-open" class="subtle">
+        How it works <span>↗</span>
+      </button>
+    </header>
+    <main>
+      <section class="sidebar">
+        <div class="intro">
+          <div class="eyebrow">LESS WAITING. MORE LIVING.</div>
+          <h1>Your next bus,<br /><span>figured out.</span></h1>
+          <p>
+            A better way from here to there. Find your stop,<br
+              class="desktop"
+            />
+            catch your bus, and know when to leave.
+          </p>
+        </div>
+        <form id="planner">
+          <div class="journey-inputs">
+            <div class="journey-line"></div>
+            <div class="location-field">
+              <span class="field-icon origin-icon"></span
+              ><label for="origin">STARTING FROM</label>
+              <div class="input-row">
+                <input
+                  id="origin"
+                  placeholder="Your current location"
+                  autocomplete="off"
+                  role="combobox"
+                  aria-expanded="false"
+                  aria-controls="origin-results"
+                /><button
+                  type="button"
+                  id="locate"
+                  title="Use my current location"
+                  aria-label="Use my current location"
+                >
+                  ⌖
+                </button>
+              </div>
+              <ul
+                id="origin-results"
+                class="place-results"
+                role="listbox"
+                hidden
+              ></ul>
+              <button type="button" class="map-pick" data-pick="origin">
+                Choose on map
+              </button>
+            </div>
+            <div class="field-rule"></div>
+            <div class="location-field">
+              <span class="field-icon destination-icon"></span
+              ><label for="destination">WHERE TO?</label>
+              <div class="input-row">
+                <input
+                  id="destination"
+                  placeholder="Search a stop or intersection"
+                  autocomplete="off"
+                  role="combobox"
+                  aria-expanded="false"
+                  aria-controls="destination-results"
+                /><span class="input-arrow">↗</span>
+              </div>
+              <ul
+                id="destination-results"
+                class="place-results"
+                role="listbox"
+                hidden
+              ></ul>
+              <button type="button" class="map-pick" data-pick="destination">
+                Choose on map
+              </button>
+            </div>
+          </div>
+          <div class="trip-options">
+            <label for="max-walk">Walking at each end</label
+            ><select id="max-walk">
+              <option value="5">Up to 5 min</option>
+              <option value="10">Up to 10 min</option>
+              <option value="15" selected>Up to 15 min</option>
+              <option value="20">Up to 20 min</option>
+            </select>
+          </div>
+          <button type="submit" class="find-button" id="find">
+            Find my next bus <span>→</span>
+          </button>
+          <p class="search-help">
+            Search RTS stop names, enter latitude, longitude, or place a pin on
+            the map.
+          </p>
+        </form>
+        <div id="status" role="status" aria-live="polite" hidden></div>
+        <div id="results" aria-live="polite"></div>
+        <div id="empty-state">
+          <div class="section-label">
+            <span>A LITTLE LESS GUESSWORK</span><span>01 — 03</span>
+          </div>
+          <div class="benefit">
+            <span class="benefit-icon">⌖</span>
+            <div>
+              <b>Your closest stop</b>
+              <p>Start where you are. We’ll find nearby RTS stops.</p>
+            </div>
+          </div>
+          <div class="benefit">
+            <span class="benefit-icon">⇄</span>
+            <div>
+              <b>The bus that gets you there</b>
+              <p>Verified stops on the same live trip, in the right order.</p>
+            </div>
+          </div>
+          <div class="benefit">
+            <span class="benefit-icon">◷</span>
+            <div>
+              <b>Leave at the right time</b>
+              <p>A walking estimate, plus a little breathing room.</p>
+            </div>
+          </div>
+          <button id="sample" class="sample-link">
+            Try a trip from East & Alexander <span>↗</span>
+          </button>
+        </div>
+        <div class="sidebar-foot">
+          <span class="tiny-dot"></span> Live RTS data
+          <span class="foot-separator">·</span> Direct buses
+          <span class="foot-separator">·</span> No account needed
+        </div>
+      </section>
+      <section class="map-panel" aria-label="Trip map">
+        <div
+          id="map"
+          role="region"
+          aria-label="Interactive map of Rochester. Use Choose on map to place your trip locations."
+        ></div>
+        <div class="map-top">
+          <span class="map-label"
+            ><span class="live-dot"></span> YOUR CITY, IN MOTION</span
+          ><button id="recenter" title="Recenter map" aria-label="Recenter map">
+            ⌖
+          </button>
+        </div>
+        <div class="map-hint" id="map-hint" hidden>
+          <span id="map-hint-text">Click the map to choose a location</span
+          ><button id="cancel-pick" aria-label="Cancel map selection">✕</button>
+        </div>
+        <div class="map-summary" id="map-summary">
+          <span class="map-summary-icon">⇄</span>
+          <div>
+            <strong>Good things are just a bus ride away.</strong>
+            <p>Plan your next move in Rochester.</p>
+          </div>
+          <span class="summary-arrow">↗</span>
+        </div>
+        <div class="map-legend">
+          <span><i class="legend-origin"></i>You</span
+          ><span><i class="legend-stop"></i>Stop</span
+          ><span><i class="legend-bus"></i>Live bus</span
+          ><span id="vehicle-count">Connecting to RTS…</span>
+        </div>
+      </section>
+    </main>
+    <dialog id="about">
+      <button id="about-close" class="dialog-close" aria-label="Close">
+        ✕
+      </button>
+      <div class="eyebrow">A SMARTER START</div>
+      <h2>From your door<br />to the right bus.</h2>
+      <p>
+        Use your device location, search RTS stop names, enter coordinates, or
+        select points on the map.
+      </p>
+      <p>
+        LeaveNow checks up to six nearby stops at each end and matches live
+        predictions by the same trip and vehicle. It only recommends a bus if
+        your destination stop comes after your boarding stop and you have time
+        to walk there.
+      </p>
+      <p>
+        Walking times are approximate: straight-line distance with a 25%
+        allowance, at 80 meters per minute, plus a two-minute boarding buffer.
+        The dotted map line is a connection guide, not a street route. Check
+        crossings and sidewalks.
+      </p>
+      <p>
+        This version finds direct buses in the current live window. Transfers,
+        future timetables, and turn-by-turn walking routes are not included. RTS
+        predictions can change.
+      </p>
+      <p>
+        Coordinates go to this app’s server to find stops. The map loads tiles
+        from OpenStreetMap. Locations are not saved by the app.
+      </p>
+      <a href="https://www.myrts.com/" target="_blank" rel="noopener noreferrer"
+        >Visit RTS for official travel information ↗</a
+      >
+    </dialog>
+  </body>
+</html>
