@@ -8,8 +8,12 @@
 !prototypes/
 !prototypes/streamlit/
 !prototypes/streamlit/app.py
+!prototypes/streamlit/presentation.py
+!prototypes/streamlit/theme.css
 !prototypes/streamlit/client.py
 !prototypes/streamlit/requirements.txt
 !deploy/
 !deploy/docker/
 !deploy/docker/**
+!.streamlit/
+!.streamlit/config.toml
