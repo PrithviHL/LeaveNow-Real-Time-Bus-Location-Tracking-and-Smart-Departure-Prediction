@@ -12,6 +12,7 @@
     "dev": "node --watch src/server/index.js",
     "test": "node --test tests/*.test.js",
     "check": "node scripts/check.js",
-    "test:coverage": "node --test --experimental-test-coverage tests/*.test.js"
+    "test:coverage": "node --test --experimental-test-coverage tests/*.test.js",
+    "gtfs:import": "python3 scripts/import-gtfs.py"
   }
 }

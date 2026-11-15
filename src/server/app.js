@@ -1,7 +1,8 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { planTrip, point, agencyTime } from "./planner.js";
+import { point, agencyTime } from "./planner.js";
+import { planJourney, routingOptions } from "./journeys.js";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const types = {
   ".html": "text/html",
@@ -12,7 +13,7 @@ const types = {
 };
 export function handler(
   client,
-  { allowedHosts = ["localhost", "127.0.0.1", "[::1]"] } = {},
+  { allowedHosts = ["localhost", "127.0.0.1", "[::1]"], schedule = null } = {},
 ) {
   return async (req, res) => {
     const json = (status, data) => {
@@ -43,6 +44,7 @@ export function handler(
         return json(200, {
           ok: true,
           configured: Boolean(client.key),
+          timetable: schedule?.metadata() || null,
           service: "RTS Rochester",
           timeZone: "America/New_York",
         });
@@ -53,7 +55,7 @@ export function handler(
             error: "Enter 2–100 characters to search RTS stops.",
           });
         const terms = q.split(/\s+/);
-        const stops = (await client.stops())
+        const stops = (schedule ? schedule.stops : await client.stops())
           .filter(
             (s) =>
               terms.every((t) => s.name.toLowerCase().includes(t)) ||
@@ -85,24 +87,28 @@ export function handler(
           parsed = JSON.parse(body);
           point(parsed.origin);
           point(parsed.destination);
+          routingOptions(parsed);
           if (
             parsed.maxWalk !== undefined &&
             ![5, 10, 15, 20].includes(parsed.maxWalk)
           )
             throw new Error("Choose a valid walking limit.");
-        } catch {
+        } catch (error) {
           return json(400, {
             error:
-              "Choose valid starting and destination locations and a walking limit.",
+              error instanceof SyntaxError || error instanceof TypeError
+                ? "Choose valid starting and destination locations, a walking limit, and a travel time."
+                : error.message,
           });
         }
         return json(
           200,
-          await planTrip(
+          await planJourney(
             client,
+            schedule,
             parsed.origin,
             parsed.destination,
-            parsed.maxWalk ?? 15,
+            parsed,
           ),
         );
       }

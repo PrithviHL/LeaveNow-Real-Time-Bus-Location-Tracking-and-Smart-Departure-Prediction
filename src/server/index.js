@@ -5,14 +5,22 @@ import { fileURLToPath } from "node:url";
 import { TransitClient } from "./transit.js";
 import { handler } from "./app.js";
 import { readConfig } from "./config.js";
+import { Schedule } from "./schedule.js";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const envPath = path.join(root, ".env");
 if (existsSync(envPath)) process.loadEnvFile(envPath);
 const config = readConfig(process.env);
+const feedPath = process.env.GTFS_PATH || path.join(root, "data/gtfs.json.gz");
+const schedule = existsSync(feedPath) ? Schedule.load(feedPath) : null;
+if (schedule)
+  console.log(
+    `Timetable ready: ${schedule.stops.length} stops; feed ${schedule.metadata().version}`,
+  );
 const server = http.createServer(
   handler(new TransitClient(config.apiKey), {
     allowedHosts: config.allowedHosts,
+    schedule,
   }),
 );
 server.requestTimeout = 60_000;
