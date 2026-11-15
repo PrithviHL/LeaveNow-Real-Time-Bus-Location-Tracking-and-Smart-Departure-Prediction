@@ -1,6 +1,6 @@
 # Google sign-in
 
-LeaveNow uses Streamlit's OpenID Connect authentication with Google. New and returning users use **Your account → Continue with Google**; no separate password or local account database is created. The signed-in panel shows the user's name and email and offers **Sign out**. Journey planning remains available to guests. Signing in does not yet save trips or provide account-specific features.
+LeaveNow uses Streamlit's OpenID Connect authentication with Google. New and returning users use **Your account → Continue with Google**; no separate password or local account database is created. The signed-in panel shows the user's name and email and offers **Sign out**. Google sign-in is required before the journey planner is rendered. Signing in does not yet save trips or provide account-specific features.
 
 ## One-time Google setup
 
@@ -23,7 +23,7 @@ Do not put credential values in chat, Git, screenshots, client-side code, or a U
 
 The public supervisor writes the four Render values into a mode-0600 `.streamlit/secrets.toml` file at runtime. The file is excluded from Git and Docker build context. Secrets are not passed to the Node API child. The public UI uses Streamlit's signed identity cookie and OIDC state/nonce handling; token exposure is not enabled. No passwords or identity tokens are stored in the repository, and no user database is required for sign-in alone.
 
-With no auth configuration, the login button is disabled and guests can plan journeys. Partial configuration fails startup rather than creating a broken login flow. The cookie secret must stay stable across deployments. Streamlit identity cookies can persist for up to 30 days; users can sign out explicitly. This is an optional identity feature, not authorization protecting the transit API.
+With no auth configuration, the login button is disabled and the planner remains inaccessible. Partial configuration fails startup rather than creating a broken login flow. The cookie secret must stay stable across deployments. Streamlit identity cookies can persist for up to 30 days; users can sign out explicitly. The Streamlit UI stops rendering for signed-out sessions. The hosted transit API remains private on loopback; this does not add authentication to separately exposed API deployments.
 
 ## Local development
 
@@ -42,6 +42,6 @@ Register that localhost callback with Google as well. The public supervisor deli
 
 ## Verification
 
-`python -m unittest discover -s prototypes/streamlit/tests` covers absent/partial configuration, callback validation, private file permissions, TOML escaping, child secret isolation, guest UI, login invocation, identity rendering, and logout invocation. A real Google redirect round-trip must be tested after the owner configures credentials; mocked UI tests do not establish provider connectivity.
+`python -m unittest discover -s prototypes/streamlit/tests` covers absent/partial configuration, callback validation, private file permissions, TOML escaping, child secret isolation, signed-out access blocking, login invocation, identity rendering, and logout invocation. A real Google redirect round-trip must be tested after the owner configures credentials; mocked UI tests do not establish provider connectivity.
 
 References: [Streamlit authentication](https://docs.streamlit.io/develop/concepts/connections/authentication), [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect).

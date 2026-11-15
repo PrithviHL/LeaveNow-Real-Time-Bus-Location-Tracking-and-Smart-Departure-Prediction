@@ -52,6 +52,13 @@ def ready_app():
 
 
 class AppTests(unittest.TestCase):
+    def setUp(self):
+        identity = patch(
+            "authentication.st.user", {"is_logged_in": True, "name": "Test Traveler"}
+        )
+        identity.start()
+        self.addCleanup(identity.stop)
+
     def test_initial_screen_and_missing_locations(self):
         app = AppTest.from_file(str(APP), default_timeout=20).run()
         self.assertFalse(app.exception)

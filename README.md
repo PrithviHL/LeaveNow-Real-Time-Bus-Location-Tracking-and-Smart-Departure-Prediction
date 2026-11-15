@@ -101,4 +101,4 @@ Live data is provided by [RTS](https://www.myrts.com/RGRTA-API). Maps use [OpenS
 
 ### Google sign-in
 
-The account panel supports Google sign-in and logout, with guest access to the planner. Hosting credentials must be configured before login is enabled. See [Google sign-in setup](docs/google-sign-in.md) for the Google OAuth client, Render secrets, and local setup.
+The account panel supports Google sign-in and logout, with sign-in required to access the planner. Hosting credentials must be configured before login is enabled. See [Google sign-in setup](docs/google-sign-in.md) for the Google OAuth client, Render secrets, and local setup.

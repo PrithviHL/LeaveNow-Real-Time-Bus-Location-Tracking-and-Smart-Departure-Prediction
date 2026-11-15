@@ -45,9 +45,11 @@ class AuthenticationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 configure_google_auth(dict(env, AUTH_REDIRECT_URI=redirect))
 
-    def test_guest_login_disabled_without_configuration(self):
+    def test_signed_out_users_cannot_access_planner_without_configuration(self):
         app = AppTest.from_file(str(ROOT / "prototypes/streamlit/app.py")).run()
         self.assertFalse(app.exception)
+        self.assertFalse(any(b.label == "Find my next bus" for b in app.button))
+        self.assertEqual(len(app.radio), 0)
         self.assertTrue(
             next(b for b in app.button if b.key == "account_login").disabled
         )
@@ -63,6 +65,7 @@ class AuthenticationTests(unittest.TestCase):
         )
         with patch("authentication.st.login") as login:
             app.run()
+            self.assertFalse(any(b.label == "Find my next bus" for b in app.button))
             next(b for b in app.button if b.key == "account_login").click().run()
             login.assert_called_once_with()
         app = AppTest.from_file(str(ROOT / "prototypes/streamlit/app.py"))
@@ -73,6 +76,7 @@ class AuthenticationTests(unittest.TestCase):
             ),
         ), patch("authentication.st.logout") as logout:
             app.run()
+            self.assertTrue(any(b.label == "Find my next bus" for b in app.button))
             self.assertTrue(any("Test Traveler" in item.value for item in app.markdown))
             next(b for b in app.button if b.key == "account_logout").click().run()
             logout.assert_called_once_with()

@@ -22,8 +22,9 @@ def configured():
 
 
 def account_controls():
-    with st.expander("Your account", expanded=False):
-        if st.user.get("is_logged_in", False):
+    signed_in = st.user.get("is_logged_in", False)
+    with st.expander("Your account", expanded=not signed_in):
+        if signed_in:
             # Identity comes from the OIDC token, never query parameters or form input.
             st.write(f"Signed in as {st.user.get('name', 'traveler')}")
             st.caption(st.user.get("email", "Google account"))
@@ -39,10 +40,11 @@ def account_controls():
             ):
                 st.login()
             if not ready:
-                st.caption(
-                    "Google sign-in is being set up. You can plan journeys as a guest."
-                )
+                st.caption("Google sign-in is being set up. Please try again later.")
             else:
                 st.caption(
-                    "You can also continue planning as a guest. Signing in shares your name and email with LeaveNow."
+                    "Sign in to plan your journey. Signing in shares your name and email with LeaveNow."
                 )
+
+    if not signed_in:
+        st.stop()
