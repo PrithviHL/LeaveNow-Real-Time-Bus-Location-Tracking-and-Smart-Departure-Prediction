@@ -10,7 +10,11 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const envPath = path.join(root, ".env");
 if (existsSync(envPath)) process.loadEnvFile(envPath);
 const config = readConfig(process.env);
-const server = http.createServer(handler(new TransitClient(config.apiKey)));
+const server = http.createServer(
+  handler(new TransitClient(config.apiKey), {
+    allowedHosts: config.allowedHosts,
+  }),
+);
 server.requestTimeout = 60_000;
 server.headersTimeout = 15_000;
 server.on("error", (error) => {
@@ -21,7 +25,7 @@ server.on("error", (error) => {
   );
   process.exitCode = 1;
 });
-server.listen(config.port, "127.0.0.1", () =>
+server.listen(config.port, config.bindHost, () =>
   console.log(`LeaveNow ready at http://localhost:${config.port}`),
 );
 for (const signal of ["SIGINT", "SIGTERM"]) {

@@ -15,5 +15,25 @@ test("configuration fails early for missing credentials and invalid ports", () =
   assert.deepEqual(readConfig({ RTS_API_KEY: " test " }), {
     apiKey: "test",
     port: 3001,
+    bindHost: "127.0.0.1",
+    allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
   });
+});
+
+test("container hosts require explicit configuration", () => {
+  const config = readConfig({
+    RTS_API_KEY: "test",
+    HOST: "0.0.0.0",
+    ALLOWED_HOSTS: "api,leavenow-api",
+  });
+  assert.equal(config.bindHost, "0.0.0.0");
+  assert.ok(config.allowedHosts.includes("api"));
+  assert.throws(
+    () => readConfig({ RTS_API_KEY: "test", HOST: "example.com" }),
+    /HOST/,
+  );
+  assert.throws(
+    () => readConfig({ RTS_API_KEY: "test", ALLOWED_HOSTS: "*" }),
+    /ALLOWED_HOSTS/,
+  );
 });

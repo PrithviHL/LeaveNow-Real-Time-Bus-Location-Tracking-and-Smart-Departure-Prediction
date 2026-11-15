@@ -10,7 +10,10 @@ const types = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
 };
-export function handler(client) {
+export function handler(
+  client,
+  { allowedHosts = ["localhost", "127.0.0.1", "[::1]"] } = {},
+) {
   return async (req, res) => {
     const json = (status, data) => {
       res.writeHead(status, {
@@ -28,7 +31,7 @@ export function handler(client) {
     );
     try {
       const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-      if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
+      if (!allowedHosts.includes(url.hostname))
         return json(403, { error: "Local access only." });
       if (req.method === "POST") {
         if (req.headers.origin && req.headers.origin !== url.origin)

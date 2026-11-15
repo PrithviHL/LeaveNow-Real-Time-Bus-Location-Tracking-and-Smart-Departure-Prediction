@@ -59,3 +59,27 @@ test("HTTP validation, stop search, static files and origin boundaries", async (
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("container DNS hosts are explicitly allowed without allowing arbitrary hosts", async () => {
+  const client = { key: "test", stops: async () => [] };
+  const server = http.createServer(
+    handler(client, { allowedHosts: ["localhost", "127.0.0.1", "api"] }),
+  );
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const requestHost = (host) =>
+    new Promise((resolve, reject) => {
+      http
+        .get(base + "/api/health", { headers: { Host: host } }, (response) => {
+          response.resume();
+          response.on("end", () => resolve(response.statusCode));
+        })
+        .on("error", reject);
+    });
+  try {
+    assert.equal(await requestHost("api:3001"), 200);
+    assert.equal(await requestHost("untrusted.example"), 403);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

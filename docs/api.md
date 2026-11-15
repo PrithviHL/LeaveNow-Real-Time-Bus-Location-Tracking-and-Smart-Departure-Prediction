@@ -1,6 +1,6 @@
 # API reference
 
-All responses are JSON except static assets. The API is local-only and not versioned as a public service. Mutations require `Content-Type: application/json`; browser Origin must match the requested origin.
+All responses are JSON except static assets. The API defaults to local-only access and is not versioned as a public service. The container prototype explicitly allows its internal service hostname; it does not add public authentication. Mutations require `Content-Type: application/json`; browser Origin must match the requested origin.
 
 ## GET /api/health
 
