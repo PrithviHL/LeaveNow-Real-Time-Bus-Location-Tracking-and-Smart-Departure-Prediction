@@ -34,6 +34,9 @@ class PublicEntryTests(unittest.TestCase):
             Path, "read_text", return_value=json.dumps({"sha256": [digest]})
         ):
             self.assertFalse(module.safe_api_key("exposed-test-value"))
+            self.assertTrue(
+                module.safe_api_key("exposed-test-value", allow_existing=True)
+            )
         _, _, ui = module.child_environments({"PORT": "10000"})
         self.assertEqual(ui["LEAVENOW_API_CONFIGURED"], "0")
 

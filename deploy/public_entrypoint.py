@@ -15,9 +15,11 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def safe_api_key(value):
+def safe_api_key(value, allow_existing=False):
     if not value or not value.strip() or value == "your-rts-api-key":
         return False
+    if allow_existing:
+        return True
     blocked = json.loads(
         (ROOT / "security/blocked-credential-fingerprints.json").read_text()
     )["sha256"]
@@ -39,7 +41,15 @@ def child_environments(env):
     ui_env = {k: v for k, v in env.items() if k != "RTS_API_KEY"}
     ui_env.update(
         LEAVENOW_API_URL="http://127.0.0.1:3001",
-        LEAVENOW_API_CONFIGURED="1" if safe_api_key(env.get("RTS_API_KEY")) else "0",
+        LEAVENOW_API_CONFIGURED=(
+            "1"
+            if safe_api_key(
+                env.get("RTS_API_KEY"),
+                allow_existing=env.get("ALLOW_EXISTING_RTS_KEY", "false").lower()
+                == "true",
+            )
+            else "0"
+        ),
     )
     ui_env.setdefault("STREAMLIT_SERVER_COOKIE_SECRET", secrets.token_urlsafe(32))
     return port, api_env, ui_env

@@ -10,7 +10,7 @@ The supervisor in `deploy/public_entrypoint.py` validates the public port, start
 
 The previous RTS key was committed historically before the current application was created. An audit found no exact copy of that key in current public branch histories, but GitHub pull request #1 still retains four historical blobs containing it. A rewritten default branch does not erase read-only pull-request refs, cached commit views, forks, or other people's clones.
 
-**Revoke the old key and obtain a replacement from RTS.** Removing source copies or making the repo private cannot revoke a credential. The new public supervisor rejects the known exposed key by SHA-256 fingerprint; no raw credential is stored in the fingerprint file.
+**Recommended: revoke the old key and obtain a replacement from RTS.** Removing source copies or making the repo private cannot revoke a credential. The public supervisor rejects the known exposed key by SHA-256 fingerprint by default; no raw credential is stored in the fingerprint file. The owner explicitly requested continuing with the current key, so the hosted service can opt in with `ALLOW_EXISTING_RTS_KEY=true`. This only permits server-side use; it does not undo the earlier exposure or make the credential confidential again. The raw key is stored only in the Render environment.
 
 If no replacement is configured, the public site can render its interface and maps, but it clearly reports live arrivals unavailable and does not call the private planner. Do not describe that state as a fully operational bus planner.
 
