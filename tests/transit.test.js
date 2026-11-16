@@ -55,7 +55,7 @@ test("credential and API envelope errors are safe; no-service is a valid empty r
   );
   const empty = new BusTimeClient("test", {
     feed: "bustime",
-    fetcher: async () => envelope({ error: [{ msg: "No service scheduled" }] }),
+    fetcher: async () => envelope({ error: [{ msg: "No data found for parameters: rt" }] }),
   });
   assert.deepEqual(await empty.predictions("1"), []);
   await assert.rejects(

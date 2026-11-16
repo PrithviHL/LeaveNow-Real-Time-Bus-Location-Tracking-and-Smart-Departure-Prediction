@@ -82,9 +82,7 @@ export class BusTimeClient {
         );
         if (
           errors.every((e) =>
-            /^(No data found for parameter\(s\)|No arrival times|No service scheduled)(?:[.:].*)?$/i.test(
-              e,
-            ),
+            /^(No data found\b|No arrival times\b|No service scheduled\b)/i.test(e),
           )
         )
           data = {};
