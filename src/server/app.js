@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { point, agencyTime } from "./planner.js";
+import { Geocoder } from "./geocoding.js";
 import { trackBoarding } from "./tracking.js";
 import { inServiceArea } from "./gainesville.js";
 import { planJourney, routingOptions } from "./journeys.js";
@@ -15,7 +16,11 @@ const types = {
 };
 export function handler(
   client,
-  { allowedHosts = ["localhost", "127.0.0.1", "[::1]"], schedule = null } = {},
+  {
+    allowedHosts = ["localhost", "127.0.0.1", "[::1]"],
+    schedule = null,
+    geocoder = new Geocoder(),
+  } = {},
 ) {
   return async (req, res) => {
     const json = (status, data) => {
@@ -58,6 +63,17 @@ export function handler(
             (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
           );
         return json(200, { results: stops });
+      }
+      if (req.method === "GET" && url.pathname === "/api/addresses") {
+        const q = url.searchParams.get("q") || "";
+        if (q.trim().length < 3 || q.length > 150)
+          return json(400, {
+            error: "Enter 3–150 characters for an address or place.",
+          });
+        return json(200, {
+          results: await geocoder.search(q),
+          attribution: "OpenStreetMap contributors / Photon",
+        });
       }
       if (req.method === "GET" && url.pathname === "/api/places") {
         const q = (url.searchParams.get("q") || "").trim().toLowerCase();

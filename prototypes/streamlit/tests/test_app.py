@@ -76,6 +76,56 @@ class AppTests(unittest.TestCase):
         identity.start()
         self.addCleanup(identity.stop)
 
+    def test_address_search_requires_explicit_search_and_selection(self):
+        def reply(endpoint, payload=None):
+            self.assertTrue(endpoint.startswith("/api/addresses?"))
+            return {
+                "results": [
+                    {
+                        "name": "Marston Science Library",
+                        "lat": 29.6479899,
+                        "lon": -82.3439469,
+                    }
+                ]
+            }
+
+        with patch("client.api_request", side_effect=reply) as request:
+            app = ready_app()
+            app.radio[0].set_value("Address or place").run()
+            next(
+                t for t in app.text_input if t.key == "origin_address_query"
+            ).set_value("Marston Science Library")
+            request.assert_not_called()
+            next(b for b in app.button if b.label == "Search places").click().run()
+            self.assertFalse(app.exception)
+            next(
+                s for s in app.selectbox if s.key == "origin_address_choice"
+            ).set_value(0).run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.6479899)
+
+    def test_gps_success_and_denial_are_handled_separately(self):
+        from types import SimpleNamespace
+
+        for location in [
+            {"latitude": 29.65, "longitude": -82.34, "accuracy": 15},
+            {"error": "denied"},
+        ]:
+            with patch(
+                "streamlit.components.v2.component",
+                return_value=lambda **kwargs: SimpleNamespace(location=location),
+            ):
+                app = ready_app()
+                app.radio[0].set_value("Use my location").run()
+                self.assertFalse(app.exception)
+                if "error" in location:
+                    self.assertIsNone(app.session_state["resolved_origin"])
+                    self.assertTrue(
+                        any("permission was denied" in w.value for w in app.warning)
+                    )
+                else:
+                    self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.65)
+
     def test_autocomplete_selection_resolves_both_locations(self):
         app = AppTest.from_file(str(APP), default_timeout=20).run()
         origin = next(s for s in app.selectbox if s.key == "origin_stop")
@@ -152,9 +202,7 @@ class AppTests(unittest.TestCase):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             selector = next(
-                s
-                for s in app.selectbox
-                if s.label == "Choose a live bus on this route"
+                s for s in app.selectbox if s.label == "Choose a live bus on this route"
             )
             selector.set_value("901").run()
             self.assertFalse(app.exception)
@@ -166,18 +214,34 @@ class AppTests(unittest.TestCase):
             )
 
     def test_gps_only_bus_can_be_selected_without_inventing_eta(self):
-        now = int(time.time()*1000)
+        now = int(time.time() * 1000)
+
         def reply(endpoint, payload=None):
             if endpoint.startswith("/api/tracking"):
-                return {"buses": [{"id":"902","route":"10","destination":"Downtown","arrivalAt":None,"position":{"lat":29.64,"lon":-82.34,"updatedAt":now}}]}
+                return {
+                    "buses": [
+                        {
+                            "id": "902",
+                            "route": "10",
+                            "destination": "Downtown",
+                            "arrivalAt": None,
+                            "position": {"lat": 29.64, "lon": -82.34, "updatedAt": now},
+                        }
+                    ]
+                }
             return trip_fixture()
+
         with patch("client.api_request", side_effect=reply):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
-            next(s for s in app.selectbox if s.label == "Choose a live bus on this route").set_value("902").run()
+            next(
+                s for s in app.selectbox if s.label == "Choose a live bus on this route"
+            ).set_value("902").run()
             self.assertFalse(app.exception)
             self.assertTrue(any("Live GPS is available" in i.value for i in app.info))
-            self.assertFalse(any(m.label == "Bus reaches your boarding stop" for m in app.metric))
+            self.assertFalse(
+                any(m.label == "Bus reaches your boarding stop" for m in app.metric)
+            )
 
     def test_successful_trip_renders_metrics(self):
         with patch("client.api_request", return_value=trip_fixture()):

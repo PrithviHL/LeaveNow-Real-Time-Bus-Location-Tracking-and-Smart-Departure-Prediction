@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import urlencode
 
 import streamlit as st
-from streamlit_geolocation import streamlit_geolocation
+
 
 from client import (
     ApiError,
@@ -90,6 +90,86 @@ def cached_stops():
     return stop_catalog()
 
 
+# Components v2 renders in the app page, avoiding iframe geolocation policy issues.
+gps_component = st.components.v2.component(
+    "leavenow_gps",
+    html='<button type="button">⌖ Use my current location</button><p role="status" aria-live="polite">Click to request your location.</p>',
+    css="button {background:#c5f267;color:#152217;border:0;border-radius:8px;padding:12px 18px;font:600 14px sans-serif;cursor:pointer} p {font:13px sans-serif;color:var(--st-text-color)}",
+    js="""export default function({parentElement,setStateValue}) {
+      const button=parentElement.querySelector('button'), status=parentElement.querySelector('p');
+      let active=true;
+      button.onclick=()=>{
+        if(!window.isSecureContext || !navigator.geolocation){
+          status.textContent='GPS requires a supported browser on HTTPS.';
+          setStateValue('location',{error:'unsupported'});return;
+        }
+        button.disabled=true;status.textContent='Finding your location…';
+        navigator.geolocation.getCurrentPosition(position=>{
+          if(!active)return;
+          status.textContent='Location received.';button.disabled=false;
+          setStateValue('location',{latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy:position.coords.accuracy});
+        },error=>{
+          if(!active)return;
+          button.disabled=false;
+          const reason=error.code===1?'denied':error.code===3?'timeout':'unavailable';
+          status.textContent=reason==='denied'?'Location permission was denied. Check this site’s browser permissions.':reason==='timeout'?'Location request timed out. Click to retry.':'Your device could not determine its location. Click to retry.';
+          setStateValue('location',{error:reason});
+        },{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+      };
+      return ()=>{active=false;button.onclick=null;};
+    }""",
+)
+
+
+def choose_address(key):
+    st.caption(
+        "Search a Gainesville address, building, or business. Search text is sent to Photon; do not enter confidential information."
+    )
+    with st.form(key + "_address_search"):
+        query = st.text_input(
+            "Address or place",
+            placeholder="e.g. Marston Science Library, Gainesville",
+            key=key + "_address_query",
+        )
+        search = st.form_submit_button("Search places")
+    if search:
+        st.session_state.pop(key + "_address_results", None)
+        if not 3 <= len(query.strip()) <= 150:
+            st.warning("Enter 3–150 characters to search.")
+        else:
+            try:
+                data = api_request("/api/addresses?" + urlencode({"q": query.strip()}))
+                st.session_state[key + "_address_results"] = (
+                    query.strip(),
+                    data["results"],
+                )
+                st.session_state.pop(key + "_address_choice", None)
+            except ApiError as error:
+                st.warning(str(error))
+    saved = st.session_state.get(key + "_address_results")
+    st.caption("Place data © OpenStreetMap contributors · Photon")
+    if not saved or saved[0] != query.strip():
+        return None
+    results = saved[1]
+    if not results:
+        st.info(
+            "No matching place in Gainesville. Try a fuller address or coordinates."
+        )
+        return None
+    selected = st.selectbox(
+        "Select the matching place",
+        range(len(results)),
+        index=None,
+        format_func=lambda i: results[i]["name"],
+        key=key + "_address_choice",
+    )
+    if selected is None:
+        return None
+    chosen = results[selected]
+    st.caption("Selected: " + chosen["name"])
+    return coordinate(chosen["lat"], chosen["lon"])
+
+
 def choose_stop(key, label):
     if not api_enabled:
         st.info(
@@ -163,7 +243,7 @@ with left:
     )
     origin_mode = st.radio(
         "Starting location method",
-        ["Search a stop", "Use my location", "Coordinates"],
+        ["Search a stop", "Use my location", "Coordinates", "Address or place"],
         horizontal=True,
         key="origin_method",
     )
@@ -171,7 +251,22 @@ with left:
         st.caption(
             "Click the location button below and allow browser permission. GPS needs localhost or HTTPS."
         )
-        location = streamlit_geolocation()
+        gps = gps_component(
+            key="origin_gps",
+            default={"location": None},
+            on_location_change=lambda: None,
+        )
+        location = gps.location
+        if location and location.get("error"):
+            messages = {
+                "denied": "Location permission was denied. Allow location for this website in your browser settings, then retry.",
+                "timeout": "GPS timed out. Retry or use address search.",
+                "unavailable": "Your device could not determine its location. Try your phone or address search.",
+                "unsupported": "GPS is unavailable in this browser context. Open LeaveNow directly in a normal HTTPS browser tab.",
+            }
+            st.warning(
+                messages.get(location["error"], "Location unavailable. Please retry.")
+            )
         if (
             location
             and location.get("latitude") is not None
@@ -179,7 +274,19 @@ with left:
         ):
             try:
                 origin = coordinate(location["latitude"], location["longitude"])
-                st.success("Current location received.")
+                if not (
+                    29.35 <= origin["lat"] <= 30.1 and -82.9 <= origin["lon"] <= -81.9
+                ):
+                    origin = None
+                    st.warning(
+                        "Your location is outside Gainesville RTS coverage. Use a Gainesville address or stop instead."
+                    )
+                else:
+                    st.success("Current location received.")
+                    if location.get("accuracy") is not None:
+                        st.caption(
+                            f"Device-reported accuracy: about {round(location['accuracy'])} m"
+                        )
             except (ValueError, TypeError):
                 origin = None
                 st.warning(
@@ -188,8 +295,10 @@ with left:
         else:
             origin = None
             st.info(
-                "If location is unavailable or declined, use stop search or coordinates."
+                "Your location has not been received yet. Press ‘Use my current location’ above. If the button is missing in an embedded browser, open LeaveNow directly in Chrome or Safari."
             )
+    elif origin_mode == "Address or place":
+        origin = choose_address("origin")
     elif origin_mode == "Coordinates":
         origin = choose_coordinates("origin")
     else:
@@ -200,15 +309,16 @@ with right:
     )
     destination_mode = st.radio(
         "Destination method",
-        ["Search a stop", "Coordinates"],
+        ["Search a stop", "Coordinates", "Address or place"],
         horizontal=True,
         key="destination_method",
     )
-    destination = (
-        choose_coordinates("destination")
-        if destination_mode == "Coordinates"
-        else choose_stop("destination", "Destination stop")
-    )
+    if destination_mode == "Address or place":
+        destination = choose_address("destination")
+    elif destination_mode == "Coordinates":
+        destination = choose_coordinates("destination")
+    else:
+        destination = choose_stop("destination", "Destination stop")
 
 st.session_state["resolved_origin"] = origin
 st.session_state["resolved_destination"] = destination

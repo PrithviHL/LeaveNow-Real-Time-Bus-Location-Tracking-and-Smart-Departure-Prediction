@@ -9,12 +9,12 @@ The live Streamlit application runs from **`feature/streamlit-containers`**. The
 ## Use the live app
 
 1. Continue with Google. After login, **Your account** is in the top-right header and includes **Sign out**.
-2. For either location, choose **Search a stop** and type part of a name or stop ID. Select a suggestion from the searchable dropdown. The starting point also supports browser GPS; coordinates are available for either end.
+2. For either location, choose **Search a stop** and type part of a name or stop ID. Select a suggestion from the searchable dropdown. Choose **Address or place** to search Gainesville addresses/buildings/businesses, then explicitly search and select a match. The starting point also supports a **Use my current location** button; coordinates are available for either end.
 3. Choose **Leave now**, **Depart at**, or **Arrive by**. Set your walking allowance and enable or disable a transfer; choose a connection buffer when transfers are enabled.
 4. Select **Find my next bus**. Review the walking legs, bus legs, boarding/alighting stops, transfer allowance, final arrival, and map.
 5. Check the timing label: **Live**, **Scheduled**, or **Live + Scheduled**. These indicate the source of the displayed times, not a guarantee that a service will run on time.
 
-Suggestions cover **RTS stop names**, not general street-address geocoding. Browser GPS requires permission. The map and timeline provide estimates; green walking links are approximate; blue/purple bus paths follow published RTS GTFS shapes. Results depend on the selected service date and provider availability.
+Stop suggestions cover **RTS stop names**. Address/place search uses Photon/OpenStreetMap and is limited to Gainesville. Browser GPS requires permission and HTTPS; open the app directly in Chrome/Safari if an embedded browser blocks it. The map and timeline provide estimates; green walking links are approximate; blue/purple bus paths follow published RTS GTFS shapes. Results depend on the selected service date and provider availability.
 
 ### Example inputs
 

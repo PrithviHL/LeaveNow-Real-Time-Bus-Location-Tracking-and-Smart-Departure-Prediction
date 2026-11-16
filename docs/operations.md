@@ -50,3 +50,7 @@ The stop search uses RTS data rather than the public Nominatim geocoder. OpenStr
 A credential embedded in the old prototype and notebooks was removed from the working tree during this change. Its prior Git history still exists. Rotate that credential with RTS before treating this repository as clean of historical exposure. Do not rewrite shared history without a separate coordinated migration.
 
 The current local `.env` is ignored and used only for this local setup. No user location is persisted. Caches are in memory and disappear on restart. The ignored `.cache/` directory contains only development verification output, not runtime requirements.
+
+## Browser location troubleshooting
+
+Select Use my location and press the visible Use my current location button. The browser request starts only on click, uses high accuracy, allows a 30-second cached position, and times out after 15 seconds. Denied permission, unsupported browser context, unavailable device position, and timeout have separate messages. The component uses Streamlit v2 on the app page rather than a third-party iframe. Open the public HTTPS app directly in a normal browser when an embedded browser blocks GPS. Browser and operating-system location permissions are both required; the app cannot override either. Received points outside Gainesville are rejected with a coverage message. Positions stay in the visitor session/request memory; no location database is used.
