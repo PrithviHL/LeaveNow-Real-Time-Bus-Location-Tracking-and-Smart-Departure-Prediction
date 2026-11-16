@@ -193,6 +193,12 @@ def main():
                     flush=True,
                 )
             try:
+                with urlopen("http://127.0.0.1:3001/api/tracking?stop=44&route=1", timeout=25) as response:
+                    tracking = json.load(response)
+                print("Live tracking check: " + json.dumps({"stop":"44", "route":"1", "partial":tracking.get("partial"), "buses":[{"bus":b["id"], "arrivalAt":b.get("arrivalAt")} for b in tracking.get("buses",[])]}), flush=True)
+            except (URLError, OSError, ValueError):
+                print("Live tracking diagnostic unavailable.", flush=True)
+            try:
                 probe = {
                     "origin": {"lat": 29.64514, "lon": -82.346983},
                     "destination": {"lat": 29.645567, "lon": -82.322697},

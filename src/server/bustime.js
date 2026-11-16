@@ -140,6 +140,10 @@ export class BusTimeClient {
       },
       15_000,
     );
+    if (String(id) === "44" && !this.predictionDiagnosticLogged) {
+      this.predictionDiagnosticLogged = true;
+      console.log("RTS prediction diagnostic: " + JSON.stringify({stop:"44",count:(data.prd || []).length,sample:(data.prd || []).slice(0,3).map(p=>({route:p.rt,bus:p.vid,generated:p.tmstmp,arrival:p.prdtm}))}));
+    }
     return (data.prd || [])
       .filter((p) => p && typeof p === "object")
       .map((p) => ({
