@@ -43,7 +43,11 @@ def api_request(endpoint, payload=None):
         except (ValueError, AttributeError):
             message = "The API rejected this request."
         raise ApiError(message) from None
-    except (URLError, TimeoutError, OSError):
+    except TimeoutError:
+        raise ApiError(
+            "This trip search took too long. Try a smaller walking allowance or turn off transfers, then retry."
+        ) from None
+    except (URLError, OSError):
         raise ApiError(
             "The LeaveNow API could not be reached. Check that the backend is running and try again."
         ) from None

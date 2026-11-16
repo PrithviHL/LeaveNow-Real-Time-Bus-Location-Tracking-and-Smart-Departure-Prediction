@@ -128,7 +128,11 @@ def choose_coordinates(key):
         "Latitude",
         min_value=29.35,
         max_value=30.1,
-        value=29.64514 if key == "origin" else 29.645567,
+        value=(
+            None
+            if key + "_lat" in st.session_state
+            else (29.64514 if key == "origin" else 29.645567)
+        ),
         format="%.6f",
         key=key + "_lat",
     )
@@ -136,7 +140,11 @@ def choose_coordinates(key):
         "Longitude",
         min_value=-82.9,
         max_value=-81.9,
-        value=-82.346983 if key == "origin" else -82.322697,
+        value=(
+            None
+            if key + "_lon" in st.session_state
+            else (-82.346983 if key == "origin" else -82.322697)
+        ),
         format="%.6f",
         key=key + "_lon",
     )

@@ -67,3 +67,7 @@ Clever Devices BusTime v3 runs at `https://riderts.app/bustime/api/v3/`. The ser
 ## Verification
 
 Deterministic tests cover transfers, service dates, DST, API errors, timestamps, geographic limits, and secret isolation. Real-feed checks found direct Reitz-area → Rosa Parks journeys and a two-leg Route 37 → Route 1 option. These are observations, not guaranteed departures.
+
+### Search latency
+
+Transfer search orders first legs by their best possible score and keeps a conservative bound from the best 128 distinct trip chains. It skips candidates that cannot enter that set before allocating journey objects. The final ranking and 24-candidate live-check limit are unchanged. Nine real-feed comparisons across Leave now, Depart at, Arrive by, and 5/15/30-minute walks retained identical ranked time/transfer scores. The Reitz → Downtown 15-minute-walk local check fell from approximately 953 ms to 53 ms; hosted latency depends on instance load and live-provider responses.

@@ -51,6 +51,11 @@ class ClientTests(unittest.TestCase):
             with self.assertRaisesRegex(ApiError, "could not be reached"):
                 api_request("/api/health")
 
+    def test_slow_search_has_actionable_timeout_message(self):
+        with patch("client.urlopen", side_effect=TimeoutError()):
+            with self.assertRaisesRegex(ApiError, "took too long"):
+                api_request("/api/plan", {})
+
     def test_api_error_display(self):
         error = HTTPError(
             "http://api",

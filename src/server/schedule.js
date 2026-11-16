@@ -325,6 +325,14 @@ export class Schedule {
     for (const list of second.values())
       list.sort((a, b) => a.departsAt - b.departsAt);
     const candidates = new Map();
+    let cutoff = mode === "arrive_by" ? -Infinity : Infinity;
+    first.sort((a, b) =>
+      mode === "arrive_by"
+        ? b.departsAt -
+          b.access.walkMinutes * 60000 -
+          (a.departsAt - a.access.walkMinutes * 60000)
+        : a.arrivesAt - b.arrivesAt,
+    );
     const emit = (legs, access, egress, connection = null) => {
       const first = legs[0],
         last = legs.at(-1),
@@ -335,6 +343,21 @@ export class Schedule {
         leaveAt < start ||
         destinationAt > end ||
         destinationAt - leaveAt > 6 * 3600_000
+      )
+        return;
+      if (mode === "arrive_by" ? leaveAt < cutoff : destinationAt > cutoff)
+        return;
+      const key = legs.map((l) => l.instance).join("|");
+      const existing = candidates.get(key);
+      if (
+        existing &&
+        (mode === "arrive_by"
+          ? leaveAt < existing.leaveAt ||
+            (leaveAt === existing.leaveAt &&
+              destinationAt >= existing.destinationAt)
+          : destinationAt > existing.destinationAt ||
+            (destinationAt === existing.destinationAt &&
+              leaveAt <= existing.leaveAt))
       )
         return;
       const candidate = {
@@ -366,18 +389,24 @@ export class Schedule {
           ? Math.floor((last.departsAt - first.arrivesAt) / 60000)
           : 0,
       };
-      const key = legs.map((l) => l.instance).join("|");
-      const existing = candidates.get(key);
       if (!existing || this.rank([candidate, existing], mode)[0] === candidate)
         candidates.set(key, candidate);
       if (candidates.size > 512) {
         const best = this.rank([...candidates.values()], mode).slice(0, 128);
+        cutoff =
+          mode === "arrive_by"
+            ? best.at(-1).leaveAt
+            : best.at(-1).destinationAt;
         candidates.clear();
         for (const j of best)
           candidates.set(j.legs.map((l) => l.instance).join("|"), j);
       }
     };
     for (const a of first) {
+      const leave =
+        a.departsAt - (a.access.walkMinutes + BOARDING_BUFFER) * 60000;
+      if (mode === "arrive_by" ? leave < cutoff : a.arrivesAt > cutoff)
+        continue;
       const direct = dmap.get(a.to);
       if (direct) emit([a], a.access, direct);
       if (!maxTransfers) continue;
