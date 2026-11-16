@@ -106,6 +106,8 @@ export class BusTimeClient {
     if (this.feed) return this.feed;
     const result = await this.request("getrtpidatafeeds", {}, 3600_000);
     const feeds = result.rtpidatafeed || [];
+    // Single-feed systems omit rtpidatafeed entirely (guide section 1.7).
+    if (!feeds.length) return "";
     if (feeds.length === 1 && feeds[0].name) this.feed = String(feeds[0].name);
     else {
       const selected = feeds.filter(
@@ -126,7 +128,12 @@ export class BusTimeClient {
     const rtpidatafeed = await this.feedName();
     const data = await this.request(
       "getpredictions",
-      { stpid: String(id), rtpidatafeed, unixTime: "true", tmres: "s" },
+      {
+        stpid: String(id),
+        ...(rtpidatafeed ? { rtpidatafeed } : {}),
+        unixTime: "true",
+        tmres: "s",
+      },
       15_000,
     );
     return (data.prd || [])
@@ -155,7 +162,11 @@ export class BusTimeClient {
   }
   async vehicles() {
     const rtpidatafeed = await this.feedName();
-    const data = await this.request("getroutes", { rtpidatafeed }, 3600_000);
+    const data = await this.request(
+      "getroutes",
+      rtpidatafeed ? { rtpidatafeed } : {},
+      3600_000,
+    );
     const routes = (data.routes || [])
       .filter((r) => r && r.rt !== undefined)
       .map((r) => String(r.rt));
@@ -164,7 +175,11 @@ export class BusTimeClient {
     for (let i = 0; i < routes.length; i += 10) {
       const result = await this.request(
         "getvehicles",
-        { rt: routes.slice(i, i + 10).join(","), rtpidatafeed, tmres: "s" },
+        {
+          rt: routes.slice(i, i + 10).join(","),
+          ...(rtpidatafeed ? { rtpidatafeed } : {}),
+          tmres: "s",
+        },
         20_000,
       );
       vehicles.push(...(result.vehicle || []));

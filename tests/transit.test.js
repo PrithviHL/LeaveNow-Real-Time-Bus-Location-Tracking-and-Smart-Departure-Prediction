@@ -143,3 +143,22 @@ test("BusTime times use milliseconds or validated local agency time; wrong-regio
     /Gainesville/,
   );
 });
+
+test("single-feed deployments omit the optional feed parameter", async () => {
+  const urls = [];
+  const client = new BusTimeClient("test", {
+    fetcher: async (url) => {
+      urls.push(new URL(url));
+      return {
+        ok: true,
+        json: async () => ({
+          "bustime-response": url.pathname.endsWith("getroutes")
+            ? { routes: [] }
+            : {},
+        }),
+      };
+    },
+  });
+  assert.deepEqual(await client.vehicles(), []);
+  assert.equal(urls.at(-1).searchParams.has("rtpidatafeed"), false);
+});
