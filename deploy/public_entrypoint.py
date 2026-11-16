@@ -176,6 +176,10 @@ def main():
                     f"RTS connection verified: live vehicle lookup returned {len(matches)} fresh positions.",
                     flush=True,
                 )
+                print("Live fleet sample: " + json.dumps([
+                    {"bus": v["id"], "route": v["route"], "lat": v["lat"], "lon": v["lon"]}
+                    for v in matches[:12]
+                ]), flush=True)
             except HTTPError as exc:
                 # API errors contain only fixed, sanitized messages from our adapter.
                 try:
