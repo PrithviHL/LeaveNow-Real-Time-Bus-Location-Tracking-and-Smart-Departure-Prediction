@@ -120,3 +120,7 @@ Tests cover routing, service calendars, overnight trips, live overlay checks, AP
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Change log](CHANGELOG.md)
 
 Data: [RTS](https://go-rts.com/rts-data/). Maps: [OpenStreetMap](https://www.openstreetmap.org/copyright). The original HTML interface includes Leaflet under its [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md). Archived claims about model accuracy, AWS, or research deployments are not claims about the current application.
+
+### Track the bus you choose
+
+After searching, select a journey, select its bus leg if it has a transfer, then choose a live bus under **Track your bus**. The map shows that bus in pink alongside your start, final destination, boarding stop, and get-off stop. The boarding countdown comes from RTS's prediction for that vehicle at that stop. Enable 20-second tracking refresh or refresh manually. If no fresh prediction/GPS is available, the app says so and hides the missing marker; a scheduled journey is not automatically identified with a particular live bus.

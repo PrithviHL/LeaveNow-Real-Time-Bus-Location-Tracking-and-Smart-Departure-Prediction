@@ -18,7 +18,7 @@ def theme():
     markup(Path(__file__).with_name("theme.css").read_text())
 
 
-def map_view(origin=None, destination=None, journey=None, light=False):
+def map_view(origin=None, destination=None, journey=None, light=False, bus=None):
     points = []
     for point, label, color in [
         (origin, "Your start", [197, 242, 103]),
@@ -60,6 +60,17 @@ def map_view(origin=None, destination=None, journey=None, light=False):
                     "color": [101, 178, 255],
                 }
             )
+    if bus and bus.get("position"):
+        position = bus["position"]
+        points.append(
+            {
+                "position": [position["lon"], position["lat"]],
+                "label": f"Bus {bus['id']} · Route {bus['route']}",
+                "detail": "Live position · updated "
+                + clock_time(position["updatedAt"]),
+                "color": [255, 85, 140],
+            }
+        )
     layers = [
         pdk.Layer(
             "ScatterplotLayer",

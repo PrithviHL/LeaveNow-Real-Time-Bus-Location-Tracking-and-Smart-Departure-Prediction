@@ -130,6 +130,41 @@ class AppTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.645567)
 
+    def test_select_live_bus_shows_boarding_eta_without_replanning(self):
+        now = int(time.time() * 1000)
+
+        def reply(endpoint, payload=None):
+            if endpoint.startswith("/api/tracking"):
+                return {
+                    "buses": [
+                        {
+                            "id": "901",
+                            "route": "10",
+                            "destination": "Downtown",
+                            "arrivalAt": now + 300000,
+                            "position": {"lat": 29.64, "lon": -82.34, "updatedAt": now},
+                        }
+                    ]
+                }
+            return trip_fixture()
+
+        with patch("client.api_request", side_effect=reply) as request:
+            app = ready_app()
+            next(b for b in app.button if b.label == "Find my next bus").click().run()
+            selector = next(
+                s
+                for s in app.selectbox
+                if s.label == "Choose the bus you want to board"
+            )
+            selector.set_value("901").run()
+            self.assertFalse(app.exception)
+            self.assertTrue(
+                any(m.label == "Bus reaches your boarding stop" for m in app.metric)
+            )
+            self.assertEqual(
+                sum(c.args[0] == "/api/plan" for c in request.call_args_list), 1
+            )
+
     def test_successful_trip_renders_metrics(self):
         with patch("client.api_request", return_value=trip_fixture()):
             app = ready_app()
@@ -146,7 +181,11 @@ class AppTests(unittest.TestCase):
             ).run()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             self.assertFalse(app.exception)
-            payload = request.call_args.args[1]
+            payload = next(
+                c.args[1]
+                for c in reversed(request.call_args_list)
+                if c.args[0] == "/api/plan"
+            )
             self.assertEqual(payload["mode"], "arrive_by")
             self.assertEqual(payload["maxTransfers"], 1)
             self.assertEqual(payload["transferBuffer"], 5)

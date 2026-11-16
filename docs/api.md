@@ -79,3 +79,7 @@ Errors use `{"error":"message"}`. Status codes include 400 (invalid input), 403 
 ### `GET /api/stops`
 
 Returns `{ "results": [{ "id", "name", "lat", "lon" }] }`, sorted by name and stop ID. Uses the loaded GTFS stop catalog, falling back to the RTS stop list when no timetable is loaded. The Streamlit UI caches this public catalog for one hour and filters searchable dropdowns locally as users type; no API request or RTS credential is sent from the browser for each keystroke. Selecting an option resolves coordinates; clearing it removes the resolved location. This covers RTS stops, not arbitrary street-address geocoding.
+
+## GET /api/tracking?stop=473&route=17
+
+Private, server-to-server tracking for a valid Gainesville boarding stop and route. Returns `buses` with vehicle ID, destination sign, predicted `arrivalAt`, prediction timestamp, and a nullable fresh GPS `position`. Only buses with fresh stop predictions for that route are offered. GPS is joined by vehicle ID **and** route; positions older than three minutes are hidden. A provider failure sets `partial` and never substitutes another bus or a scheduled time as a live ETA.

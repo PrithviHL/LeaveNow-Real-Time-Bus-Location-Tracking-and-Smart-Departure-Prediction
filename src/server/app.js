@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { point, agencyTime } from "./planner.js";
+import { trackBoarding } from "./tracking.js";
 import { inServiceArea } from "./gainesville.js";
 import { planJourney, routingOptions } from "./journeys.js";
 const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -82,6 +83,24 @@ export function handler(
           provider: "Gainesville RTS BusTime v3",
           serverTime: data.tm || null,
         });
+      }
+      if (req.method === "GET" && url.pathname === "/api/tracking") {
+        const stopId = url.searchParams.get("stop") || "";
+        const route = url.searchParams.get("route") || "";
+        const stop = schedule?.stops.find((s) => s.id === stopId);
+        if (
+          !stop ||
+          !inServiceArea(stop) ||
+          !route ||
+          route.length > 30 ||
+          !Object.values(schedule.data.routes).some(
+            (r) => String(r.short) === route,
+          )
+        )
+          return json(400, {
+            error: "Choose a valid Gainesville boarding stop and route.",
+          });
+        return json(200, await trackBoarding(client, stop, route));
       }
       if (req.method === "GET" && url.pathname === "/api/vehicles") {
         const now = Date.now();

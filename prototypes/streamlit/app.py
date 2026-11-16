@@ -6,6 +6,7 @@ import math
 from html import escape
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from urllib.parse import urlencode
 
 import streamlit as st
 from streamlit_geolocation import streamlit_geolocation
@@ -228,7 +229,7 @@ max_walk = options.select_slider(
     format_func=lambda n: f"{n} min",
 )
 auto_refresh = refresh_options.checkbox(
-    "Refresh live results every 60 seconds", value=True
+    "Auto-refresh bus tracking every 20 seconds", value=True
 )
 timing, connection_options = st.columns(2)
 travel_mode = timing.selectbox(
@@ -291,7 +292,57 @@ if st.button(
     st.session_state["planned_trip"] = payload
 
 
-@st.fragment(run_every="60s" if auto_refresh and mode == "leave_now" else None)
+@st.fragment(run_every="20s" if auto_refresh else None)
+def show_bus_tracking(trip, journey, leg, light):
+    st.subheader("Track your bus")
+    st.caption(
+        f"Route {leg['route']} · boarding at {leg['boarding']['name']} · get off at {leg['alighting']['name']}"
+    )
+    st.button("Refresh bus location", key="refresh_bus_location")
+    bus = None
+    try:
+        data = api_request(
+            "/api/tracking?"
+            + urlencode({"stop": leg["boarding"]["id"], "route": leg["route"]})
+        )
+        buses = {b["id"]: b for b in data.get("buses", [])}
+        key = "tracked_bus_" + str(leg["boarding"]["id"]) + "_" + str(leg["route"])
+        if st.session_state.get(key) not in buses:
+            st.session_state.pop(key, None)
+        selected = st.selectbox(
+            "Choose the bus you want to board",
+            list(buses),
+            index=None,
+            format_func=lambda id: f"Bus {id} · {buses[id]['destination']} · arrives {clock_time(buses[id]['arrivalAt'])}",
+            key=key,
+            placeholder="Select a live bus",
+        )
+        if selected:
+            bus = buses[selected]
+            minutes = max(0, math.ceil((bus["arrivalAt"] - time.time() * 1000) / 60000))
+            st.metric(
+                "Bus reaches your boarding stop",
+                "Due now" if minutes == 0 else f"{minutes} min",
+                clock_time(bus["arrivalAt"]),
+            )
+            if not bus.get("position"):
+                st.info(
+                    "Arrival prediction is available, but this bus has no fresh GPS position. Its marker is hidden until GPS returns."
+                )
+        elif not buses:
+            st.info(
+                "No fresh live bus arrival is available for this route at your boarding stop. Your scheduled journey remains shown below; check again closer to departure."
+            )
+        if data.get("partial"):
+            st.warning("Some live tracking data is temporarily unavailable.")
+    except ApiError as error:
+        st.warning(str(error))
+    map_view(trip["origin"], trip["destination"], journey, light=light, bus=bus)
+    st.caption(
+        "Pink marker = selected bus. Start, destination, boarding and get-off stops remain on the map. Enable auto-refresh for updates every 20 seconds. Arrival times are provider predictions; route number alone does not identify your scheduled trip."
+    )
+
+
 def show_results():
     trip = st.session_state.get("planned_trip")
     if not trip or not api_enabled:
@@ -303,10 +354,19 @@ def show_results():
             '<div class="ln-nudge"><div class="ln-nudge-icon">↗</div><div><b>Good things are a bus ride away.</b><p>Choose your locations above, or try a preset. We’ll check real arrivals and tell you when to leave.</p></div></div>'
         )
         return
-    st.button("Refresh arrivals now", key="refresh_arrivals")
+    refresh = st.button("Refresh arrivals now", key="refresh_arrivals")
     try:
         with st.spinner("Finding direct journeys and transfer connections…"):
-            plan = api_request("/api/plan", trip)
+            cached = st.session_state.get("trip_result")
+            if (
+                refresh
+                or not cached
+                or cached[0] != trip
+                or time.time() - cached[1] > 60
+            ):
+                cached = (dict(trip), time.time(), api_request("/api/plan", trip))
+                st.session_state["trip_result"] = cached
+            plan = cached[2]
     except ApiError as error:
         st.error(str(error))
         return
@@ -356,7 +416,7 @@ def show_results():
                 ],
                 hide_index=True,
             )
-        st.link_button("Check official RTS trip planning", "https://www.myrts.com/")
+        st.link_button("Check official RTS trip planning", "https://go-rts.com/")
         return
     if st.session_state.get("journey_choice", 0) >= len(journeys):
         st.session_state["journey_choice"] = 0
@@ -382,7 +442,17 @@ def show_results():
     walk.metric("Estimated walk to stop", f"{journey['walkMinutes']} min")
     arrive.metric("Reach destination", clock_time(journey["destinationAt"]))
     timeline(journey)
-    map_view(trip["origin"], trip["destination"], journey, light=light_map)
+    legs = journey.get("legs") or [journey]
+    leg_index = (
+        st.selectbox(
+            "Bus leg to track",
+            range(len(legs)),
+            format_func=lambda i: f"Leg {i+1} · Route {legs[i]['route']} · {legs[i]['boarding']['name']}",
+        )
+        if len(legs) > 1
+        else 0
+    )
+    show_bus_tracking(trip, journey, legs[leg_index], light_map)
     st.caption(
         "Connection lines are a guide, not a street-following bus or walking route."
     )
