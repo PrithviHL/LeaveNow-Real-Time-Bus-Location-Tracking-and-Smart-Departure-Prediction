@@ -104,17 +104,24 @@ gps_component = st.components.v2.component(
           setStateValue('location',{error:'unsupported'});return;
         }
         button.disabled=true;status.textContent='Finding your location…';
-        navigator.geolocation.getCurrentPosition(position=>{
+        const success=position=>{
           if(!active)return;
           status.textContent='Location received.';button.disabled=false;
           setStateValue('location',{latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy:position.coords.accuracy});
-        },error=>{
+        };
+        const failure=(error,mayRetry)=>{
           if(!active)return;
+          if(error.code!==1 && mayRetry){
+            status.textContent='Precise location unavailable. Trying an approximate device location…';
+            navigator.geolocation.getCurrentPosition(success,e=>failure(e,false),{enableHighAccuracy:false,timeout:20000,maximumAge:60000});
+            return;
+          }
           button.disabled=false;
           const reason=error.code===1?'denied':error.code===3?'timeout':'unavailable';
-          status.textContent=reason==='denied'?'Location permission was denied. Check this site’s browser permissions.':reason==='timeout'?'Location request timed out. Click to retry.':'Your device could not determine its location. Click to retry.';
+          status.textContent=reason==='denied'?'Location permission was denied. Check this site’s browser permissions.':reason==='timeout'?'Both location attempts timed out. Check device Location Services, then retry or use address search.':'Your device could not determine its location. Check device Location Services or use address search.';
           setStateValue('location',{error:reason});
-        },{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+        };
+        navigator.geolocation.getCurrentPosition(success,e=>failure(e,true),{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
       };
       return ()=>{active=false;button.onclick=null;};
     }""",
@@ -260,8 +267,8 @@ with left:
         if location and location.get("error"):
             messages = {
                 "denied": "Location permission was denied. Allow location for this website in your browser settings, then retry.",
-                "timeout": "GPS timed out. Retry or use address search.",
-                "unavailable": "Your device could not determine its location. Try your phone or address search.",
+                "timeout": "Both precise and approximate location requests timed out. Check Location Services on your device, or choose Address or place.",
+                "unavailable": "Your device could not determine its location. Check device Location Services, try your phone, or choose Address or place.",
                 "unsupported": "GPS is unavailable in this browser context. Open LeaveNow directly in a normal HTTPS browser tab.",
             }
             st.warning(
@@ -283,6 +290,8 @@ with left:
                     )
                 else:
                     st.success("Current location received.")
+                    if location.get("accuracy", 0) > 100:
+                        st.warning("This device location is approximate. Check the map or use an address for a more accurate walking estimate.")
                     if location.get("accuracy") is not None:
                         st.caption(
                             f"Device-reported accuracy: about {round(location['accuracy'])} m"
