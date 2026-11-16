@@ -177,7 +177,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
 
 def ticket(journey):
     label = escape(journey.get("timingLabel", "Live"))
-    transfer_label = f"{journey.get('transfers',0)} TRANSFER(S)"
+    transfer_label = "Direct" if not journey.get("transfers", 0) else "1 transfer"
     minutes = max(0, math.ceil((journey["departsAt"] / 1000 - time.time()) / 60))
     countdown = f"{minutes} min" if minutes <= 120 else clock_time(journey["departsAt"])
     countdown_caption = "until your bus" if minutes <= 120 else "departure time"

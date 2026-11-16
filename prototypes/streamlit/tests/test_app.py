@@ -51,8 +51,10 @@ def trip_fixture():
 
 def ready_app():
     app = AppTest.from_file(str(APP), default_timeout=20).run()
-    app.radio[0].set_value("Coordinates")
-    app.radio[1].set_value("Coordinates")
+    next(s for s in app.selectbox if s.key == "origin_method").set_value("Coordinates")
+    next(s for s in app.selectbox if s.key == "destination_method").set_value(
+        "Coordinates"
+    )
     return app.run()
 
 
@@ -91,7 +93,9 @@ class AppTests(unittest.TestCase):
 
         with patch("client.api_request", side_effect=reply) as request:
             app = ready_app()
-            app.radio[0].set_value("Address or place").run()
+            next(s for s in app.selectbox if s.key == "origin_method").set_value(
+                "Address or place"
+            ).run()
             next(
                 t for t in app.text_input if t.key == "origin_address_query"
             ).set_value("Marston Science Library")
@@ -116,7 +120,9 @@ class AppTests(unittest.TestCase):
                 return_value=lambda **kwargs: SimpleNamespace(location=location),
             ):
                 app = ready_app()
-                app.radio[0].set_value("Use my location").run()
+                next(s for s in app.selectbox if s.key == "origin_method").set_value(
+                    "Use my location"
+                ).run()
                 self.assertFalse(app.exception)
                 if "error" in location:
                     self.assertIsNone(app.session_state["resolved_origin"])
@@ -248,8 +254,8 @@ class AppTests(unittest.TestCase):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             self.assertFalse(app.exception)
-            self.assertEqual(len(app.metric), 4)
-            self.assertTrue(any(s.value == "17 Downtown" for s in app.subheader))
+            self.assertEqual(len(app.metric), 2)
+            self.assertTrue(any("17 Downtown" in s.value for s in app.markdown))
 
     def test_travel_modes_and_transfer_controls_are_forwarded(self):
         with patch("client.api_request", return_value=trip_fixture()) as request:
@@ -329,7 +335,7 @@ class AppTests(unittest.TestCase):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             self.assertFalse(app.exception)
-            self.assertIn("No direct bus", app.warning[0].value)
+            self.assertIn("No direct bus", app.info[0].value)
         with patch("client.api_request", side_effect=ApiError("API unavailable")):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()

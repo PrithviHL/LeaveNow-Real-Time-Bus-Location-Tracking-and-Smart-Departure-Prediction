@@ -20,7 +20,7 @@ from client import (
     travel_timestamp,
 )
 
-from presentation import theme, markup, map_view, ticket, timeline, empty_card
+from presentation import theme, markup, map_view, ticket, timeline
 from authentication import account_controls, account_menu
 
 st.set_page_config(
@@ -35,24 +35,20 @@ if st.user.get("is_logged_in", False):
     navigation, account = st.columns([5, 1.3], vertical_alignment="center")
     with navigation:
         markup(
-            '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">GAINESVILLE, FL / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
+            '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">GAINESVILLE, FL</div><div class="ln-live"><span class="ln-dot"></span>GAINESVILLE RTS</div></div>'
         )
     with account:
         account_menu()
 else:
     markup(
-        '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">GAINESVILLE, FL / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
+        '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">GAINESVILLE, FL</div><div class="ln-live"><span class="ln-dot"></span>GAINESVILLE RTS</div></div>'
     )
-markup(
-    '<div class="ln-hero"><div class="ln-eyebrow">THE CITY IS MOVING. SO CAN YOU.</div><h1>Less waiting.<br><span>More going.</span></h1><p>Your nearest stop. The right bus. A little more time for everything else.</p></div>'
-)
+markup('<div class="ln-hero"><h1>Where to?</h1></div>')
 
 account_controls()
 
 if not api_enabled:
-    st.warning(
-        "Live arrivals are temporarily unavailable. You can explore the map and sample locations while the service is being configured."
-    )
+    st.warning("Service temporarily unavailable. Try again later.")
 
 
 def apply_preset(reverse=False):
@@ -77,12 +73,17 @@ def swap_locations():
     st.session_state.pop("planned_trip", None)
 
 
-markup('<div class="ln-kicker">TAKE IT FOR A SPIN · REAL LOCATIONS, LIVE RESULTS</div>')
-preset_a, preset_b, spacer = st.columns([1, 1, 2])
-preset_a.button("↗ Reitz → Downtown", on_click=apply_preset, use_container_width=True)
-preset_b.button(
-    "↙ Downtown → Reitz", on_click=apply_preset, args=(True,), use_container_width=True
-)
+with st.expander("Try an example"):
+    preset_a, preset_b, spacer = st.columns([1, 1, 2])
+    preset_a.button(
+        "↗ Reitz → Downtown", on_click=apply_preset, use_container_width=True
+    )
+    preset_b.button(
+        "↙ Downtown → Reitz",
+        on_click=apply_preset,
+        args=(True,),
+        use_container_width=True,
+    )
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -129,9 +130,7 @@ gps_component = st.components.v2.component(
 
 
 def choose_address(key):
-    st.caption(
-        "Search a Gainesville address, building, or business. Search text is sent to Photon; do not enter confidential information."
-    )
+    st.caption("Search Gainesville places. Queries are sent to Photon.")
     with st.form(key + "_address_search"):
         query = st.text_input(
             "Address or place",
@@ -201,9 +200,7 @@ def choose_stop(key, label):
         filter_mode="fuzzy",
         key=key + "_stop",
     )
-    st.caption(
-        "Start typing to filter RTS stops, then select a suggestion. For street addresses, choose Coordinates."
-    )
+    st.caption("Type a stop name and select a match.")
     if selected is None:
         return None
     stop = by_id[selected]
@@ -237,9 +234,7 @@ def choose_coordinates(key):
         key=key + "_lon",
     )
     if key == "destination":
-        st.caption(
-            "Enter your actual destination coordinates; defaults are only a Gainesville example."
-        )
+        st.caption("Example coordinates. Replace with your destination.")
     return coordinate(lat, lon)
 
 
@@ -248,16 +243,13 @@ with left:
     markup(
         '<div class="ln-kicker"><span class="ln-pin">●</span>01 / STARTING FROM</div>'
     )
-    origin_mode = st.radio(
+    origin_mode = st.selectbox(
         "Starting location method",
         ["Search a stop", "Use my location", "Coordinates", "Address or place"],
-        horizontal=True,
+        label_visibility="collapsed",
         key="origin_method",
     )
     if origin_mode == "Use my location":
-        st.caption(
-            "Click the location button below and allow browser permission. GPS needs localhost or HTTPS."
-        )
         gps = gps_component(
             key="origin_gps",
             default={"location": None},
@@ -266,10 +258,10 @@ with left:
         location = gps.location
         if location and location.get("error"):
             messages = {
-                "denied": "Location permission was denied. Allow location for this website in your browser settings, then retry.",
-                "timeout": "Both precise and approximate location requests timed out. Check Location Services on your device, or choose Address or place.",
-                "unavailable": "Your device could not determine its location. Check device Location Services, try your phone, or choose Address or place.",
-                "unsupported": "GPS is unavailable in this browser context. Open LeaveNow directly in a normal HTTPS browser tab.",
+                "denied": "Location permission was denied. Allow it in browser settings.",
+                "timeout": "Location timed out. Try address search.",
+                "unavailable": "Location unavailable. Try address search.",
+                "unsupported": "Open LeaveNow directly in Chrome or Safari to use location.",
             }
             st.warning(
                 messages.get(location["error"], "Location unavailable. Please retry.")
@@ -285,13 +277,13 @@ with left:
                     29.35 <= origin["lat"] <= 30.1 and -82.9 <= origin["lon"] <= -81.9
                 ):
                     origin = None
-                    st.warning(
-                        "Your location is outside Gainesville RTS coverage. Use a Gainesville address or stop instead."
-                    )
+                    st.warning("Outside Gainesville. Choose a local address or stop.")
                 else:
                     st.success("Current location received.")
                     if location.get("accuracy", 0) > 100:
-                        st.warning("This device location is approximate. Check the map or use an address for a more accurate walking estimate.")
+                        st.warning(
+                            "Approximate location. Check the map before travelling."
+                        )
                     if location.get("accuracy") is not None:
                         st.caption(
                             f"Device-reported accuracy: about {round(location['accuracy'])} m"
@@ -303,9 +295,6 @@ with left:
                 )
         else:
             origin = None
-            st.info(
-                "Your location has not been received yet. Press ‘Use my current location’ above. If the button is missing in an embedded browser, open LeaveNow directly in Chrome or Safari."
-            )
     elif origin_mode == "Address or place":
         origin = choose_address("origin")
     elif origin_mode == "Coordinates":
@@ -316,10 +305,10 @@ with right:
     markup(
         '<div class="ln-kicker"><span class="ln-pin destination">◆</span>02 / WHERE TO?</div>'
     )
-    destination_mode = st.radio(
+    destination_mode = st.selectbox(
         "Destination method",
         ["Search a stop", "Coordinates", "Address or place"],
-        horizontal=True,
+        label_visibility="collapsed",
         key="destination_method",
     )
     if destination_mode == "Address or place":
@@ -331,65 +320,61 @@ with right:
 
 st.session_state["resolved_origin"] = origin
 st.session_state["resolved_destination"] = destination
-swap, map_option, space = st.columns([1, 1, 2])
-swap.button(
+st.button(
     "⇄ Swap locations",
     on_click=swap_locations,
     disabled=origin is None or destination is None,
-    use_container_width=True,
 )
-light_map = map_option.toggle("Day map", value=False)
-st.divider()
-options, refresh_options = st.columns(2)
-max_walk = options.select_slider(
-    "Maximum estimated walk at each end",
-    options=[5, 10, 15, 20],
-    value=15,
-    format_func=lambda n: f"{n} min",
-)
-auto_refresh = refresh_options.checkbox(
-    "Auto-refresh bus tracking every 20 seconds", value=True
-)
-timing, connection_options = st.columns(2)
-travel_mode = timing.selectbox(
-    "Travel time", ["Leave now", "Depart at", "Arrive by"], key="travel_mode"
-)
-allow_transfer = connection_options.toggle("Allow one transfer", value=True)
-transfer_buffer = connection_options.select_slider(
-    "Minimum transfer buffer",
-    options=[3, 5, 8, 10],
-    value=5,
-    format_func=lambda n: f"{n} min",
-)
-mode = {"Leave now": "leave_now", "Depart at": "depart_at", "Arrive by": "arrive_by"}[
-    travel_mode
-]
-when = None
-time_valid = True
-if mode != "leave_now":
-    local_now = datetime.now(ZoneInfo("America/New_York"))
-    day_col, time_col = st.columns(2)
-    day = day_col.date_input(
-        "Travel date · Gainesville",
-        value=local_now.date(),
-        min_value=local_now.date(),
-        max_value=(local_now + timedelta(days=14)).date(),
+with st.expander("Trip options"):
+    options, refresh_options = st.columns(2)
+    light_map = refresh_options.toggle("Day map", value=False)
+    max_walk = options.select_slider(
+        "Maximum walk",
+        options=[5, 10, 15, 20],
+        value=15,
+        format_func=lambda n: f"{n} min",
     )
-    clock = time_col.time_input(
-        "Travel time · America/New_York",
-        value=(local_now + timedelta(minutes=30))
-        .time()
-        .replace(second=0, microsecond=0),
-        step=300,
+    auto_refresh = refresh_options.checkbox("Auto-refresh live bus", value=True)
+    timing, connection_options = st.columns(2)
+    travel_mode = timing.selectbox(
+        "Travel time", ["Leave now", "Depart at", "Arrive by"], key="travel_mode"
     )
-    try:
-        when = travel_timestamp(day, clock)
-    except ValueError as error:
-        st.error(str(error))
-        time_valid = False
-    st.caption(
-        "Scheduled times use the RTS timetable. Live predictions are overlaid only when the exact trip is available."
+    allow_transfer = connection_options.toggle("Allow one transfer", value=True)
+    transfer_buffer = connection_options.select_slider(
+        "Connection buffer",
+        options=[3, 5, 8, 10],
+        value=5,
+        format_func=lambda n: f"{n} min",
     )
+    mode = {
+        "Leave now": "leave_now",
+        "Depart at": "depart_at",
+        "Arrive by": "arrive_by",
+    }[travel_mode]
+    when = None
+    time_valid = True
+    if mode != "leave_now":
+        local_now = datetime.now(ZoneInfo("America/New_York"))
+        day_col, time_col = st.columns(2)
+        day = day_col.date_input(
+            "Travel date · Gainesville",
+            value=local_now.date(),
+            min_value=local_now.date(),
+            max_value=(local_now + timedelta(days=14)).date(),
+        )
+        clock = time_col.time_input(
+            "Travel time · America/New_York",
+            value=(local_now + timedelta(minutes=30))
+            .time()
+            .replace(second=0, microsecond=0),
+            step=300,
+        )
+        try:
+            when = travel_timestamp(day, clock)
+        except ValueError as error:
+            st.error(str(error))
+            time_valid = False
+        st.caption("Times are local to Gainesville.")
 payload = {
     "origin": origin,
     "destination": destination,
@@ -436,7 +421,7 @@ def show_bus_tracking(trip, journey, leg, light):
             + (
                 f"arrives {clock_time(buses[id]['arrivalAt'])}"
                 if buses[id].get("arrivalAt")
-                else "GPS only · boarding ETA unavailable"
+                else "GPS only · no ETA"
             ),
             key=key,
             placeholder="Select a live bus",
@@ -454,36 +439,23 @@ def show_bus_tracking(trip, journey, leg, light):
                 )
             else:
                 st.info(
-                    "Live GPS is available, but RTS has not provided an arrival prediction for this bus at your boarding stop. This vehicle is on the route; its direction and service to your destination are not confirmed. Check the destination sign before boarding."
+                    "Live GPS is available; stop ETA is not. Check the destination sign before boarding."
                 )
             if not bus.get("position"):
-                st.info(
-                    "Arrival prediction is available, but this bus has no fresh GPS position. Its marker is hidden until GPS returns."
-                )
+                st.info("ETA available. Waiting for fresh GPS.")
         elif not buses:
-            st.info(
-                "No active bus with fresh GPS or a stop-arrival prediction is available on this route right now. The timetable above is a scheduled service, not confirmation that a vehicle is currently running. Check again closer to departure."
-            )
+            st.info("No live bus reported. The timetable is still available.")
         if data.get("partial"):
             st.warning("Some live tracking data is temporarily unavailable.")
     except ApiError as error:
         st.warning(str(error))
     map_view(trip["origin"], trip["destination"], journey, light=light, bus=bus)
-    st.caption(
-        "Pink marker = selected bus. Start, destination, boarding and get-off stops remain on the map. Enable auto-refresh for updates every 20 seconds. Arrival times are provider predictions; route number alone does not identify your scheduled trip."
-    )
+    st.caption("Pink = live bus · Updates every 20s when enabled.")
 
 
 def show_results():
     trip = st.session_state.get("planned_trip")
     if not trip or not api_enabled:
-        markup(
-            '<div class="ln-map-heading"><b>Your city. Your next move.</b><span>DRAG TO EXPLORE · SCROLL TO ZOOM</span></div>'
-        )
-        map_view(origin, destination, light=light_map)
-        markup(
-            '<div class="ln-nudge"><div class="ln-nudge-icon">↗</div><div><b>Good things are a bus ride away.</b><p>Choose your locations above, or try a preset. We’ll check real arrivals and tell you when to leave.</p></div></div>'
-        )
         return
     refresh = st.button("Refresh arrivals now", key="refresh_arrivals")
     try:
@@ -514,24 +486,14 @@ def show_results():
         markup(
             f'<div class="ln-summary"><b>⌖ {escape(nearest["name"])}</b><span>{escape(distance_label)}</span></div>'
         )
-    if plan.get("liveStatus"):
-        st.caption(plan["liveStatus"])
-    if plan.get("feed"):
-        feed = plan["feed"]
-        st.caption(
-            f"RTS timetable: {feed['version']} · service through {feed.get('endDate', 'unknown')}"
-        )
     journeys = plan["journeys"]
     if not journeys:
         reason = (
             plan.get("reason") or "No verified catchable direct bus in the live window."
         )
-        empty_card(reason)
-        st.warning(reason, icon="🕒")
+        st.info(reason.split(". ")[0].rstrip(".") + ".")
         map_view(trip["origin"], trip["destination"], light=light_map)
-        st.caption(
-            "Try Depart at or Arrive by, increase the walking allowance, or allow a transfer. Results are limited to the published feed dates."
-        )
+        st.caption("Adjust your search in Trip options.")
         if plan.get("departures"):
             st.subheader("Nearby departures · destination not verified")
             st.dataframe(
@@ -558,21 +520,16 @@ def show_results():
         key="journey_choice",
     )
     journey = journeys[selected]
-    st.subheader(journey["headsign"])
     label = journey.get("timingLabel", "Live")
     st.caption(
         f"{label} · {journey.get('transfers', 0)} transfer(s) · arrive at destination {clock_time(journey['destinationAt'])}"
     )
     ticket(journey)
-    bus, leave, walk, arrive = st.columns(4)
-    bus.metric(
-        "Departure",
-        clock_time(journey["departsAt"]),
-    )
-    leave.metric("Leave by", clock_time(journey["leaveAt"]))
+    walk, arrive = st.columns(2)
     walk.metric("Estimated walk to stop", f"{journey['walkMinutes']} min")
     arrive.metric("Reach destination", clock_time(journey["destinationAt"]))
-    timeline(journey)
+    with st.expander("Trip details"):
+        timeline(journey)
     legs = journey.get("legs") or [journey]
     leg_index = (
         st.selectbox(
@@ -584,9 +541,7 @@ def show_results():
         else 0
     )
     show_bus_tracking(trip, journey, legs[leg_index], light_map)
-    st.caption(
-        "Blue/purple lines follow published RTS bus routes. Green walking links are approximate. Route lines do not show the live bus’s recorded travel history."
-    )
+    st.caption("Blue/purple = bus route · Green = estimated walk.")
     st.link_button(
         "Walking directions to your boarding stop ↗",
         f"https://www.google.com/maps/dir/?api=1&origin={trip['origin']['lat']},{trip['origin']['lon']}&destination={journey['boarding']['lat']},{journey['boarding']['lon']}&travelmode=walking",
@@ -594,14 +549,8 @@ def show_results():
 
 
 show_results()
-with st.expander("How this prototype works"):
-    st.write(
-        "The Streamlit service calls the private Node API and never receives the RTS key. Published timetable stop sequences and service calendars determine scheduled journeys. Fresh live predictions are used only for the exact matching trip, and all walking/transfer buffers are checked again after updates."
+with st.expander("About the estimates"):
+    st.caption(
+        "Live = RTS prediction. Scheduled = timetable. Walking distances are approximate."
     )
-    st.write(
-        "Timetable routing supports direct journeys and one transfer, Leave now / Depart at / Arrive by, service calendars and holiday exceptions. Transfer walks are limited to 400 meters and your selected walking allowance. The selected connection buffer and any longer GTFS minimum are enforced. Scheduled connections are not guarantees; check changes before travel. Walking is estimated rather than street-routed. Locations remain in session memory, not a database."
-    )
-
-markup(
-    '<div class="ln-footer"><span>BUILT FOR THE JOURNEY, NOT THE WAIT.</span><span>LEAVENOW / GAINESVILLE</span></div>'
-)
+    st.caption("Route lines show the published path, not GPS history.")
