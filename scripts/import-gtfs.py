@@ -6,6 +6,7 @@ import gzip
 import hashlib
 import io
 import json
+import math
 from pathlib import Path
 from datetime import datetime, timezone
 from urllib.request import urlopen, Request
@@ -62,6 +63,35 @@ def compile_feed(raw):
             for r in rows("routes.txt")
             if r.get("route_type") == "3"
         }
+        shapes = {}
+        for row in iter_rows("shapes.txt"):
+            lat, lon = float(row["shape_pt_lat"]), float(row["shape_pt_lon"])
+            traveled = (
+                float(row["shape_dist_traveled"])
+                if row.get("shape_dist_traveled")
+                else None
+            )
+            if (
+                not all(math.isfinite(v) for v in [lat, lon])
+                or abs(lat) > 90
+                or abs(lon) > 180
+                or (
+                    traveled is not None
+                    and (not math.isfinite(traveled) or traveled < 0)
+                )
+            ):
+                raise ValueError("Invalid GTFS shape point")
+            shapes.setdefault(row["shape_id"], []).append(
+                [int(row["shape_pt_sequence"]), lon, lat, traveled]
+            )
+        for key, points in shapes.items():
+            points.sort(key=lambda p: p[0])
+            shapes[key] = [p[1:] for p in points]
+            if any(
+                a[2] is not None and b[2] is not None and b[2] < a[2]
+                for a, b in zip(shapes[key], shapes[key][1:])
+            ):
+                raise ValueError("Nonmonotonic GTFS shape distance")
         trips = {
             t["trip_id"]: {
                 "id": t["trip_id"],
@@ -69,6 +99,7 @@ def compile_feed(raw):
                 "service": t["service_id"],
                 "headsign": t.get("trip_headsign", ""),
                 "direction": t.get("direction_id", ""),
+                "shape": t.get("shape_id", ""),
                 "stops": [],
             }
             for t in rows("trips.txt")
@@ -97,11 +128,21 @@ def compile_feed(raw):
                         seconds(row["departure_time"]),
                         int(row.get("pickup_type") or 0),
                         int(row.get("drop_off_type") or 0),
+                        (
+                            float(row["shape_dist_traveled"])
+                            if row.get("shape_dist_traveled")
+                            else None
+                        ),
                     ]
                 )
         for t in trips.values():
             t["stops"].sort(key=lambda s: s[0])
             t["stops"] = [s[1:] for s in t["stops"]]
+            distances = [s[5] for s in t["stops"] if s[5] is not None]
+            if any(not math.isfinite(d) or d < 0 for d in distances) or any(
+                b < a for a, b in zip(distances, distances[1:])
+            ):
+                raise ValueError("Invalid stop shape distance")
             if any(b[1] < a[2] for a, b in zip(t["stops"], t["stops"][1:])):
                 raise ValueError("Trip stop times are not monotonic: " + t["id"])
         info = (rows("feed_info.txt") or [{}])[0]
@@ -114,6 +155,7 @@ def compile_feed(raw):
             "info": info,
             "stops": stops,
             "routes": routes,
+            "shapes": shapes,
             "trips": [t for t in trips.values() if len(t["stops"]) >= 2],
             "calendar": rows("calendar.txt"),
             "exceptions": rows("calendar_dates.txt"),

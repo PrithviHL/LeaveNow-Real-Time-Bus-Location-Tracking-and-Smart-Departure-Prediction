@@ -40,7 +40,7 @@ Bounds keep the portfolio service practical:
 | Live lookup scope                    | Up to 12 endpoint IDs for near-time candidates   |
 | Returned choices                     | Up to 8                                          |
 
-The GTFS rules do not guarantee a bus will hold a connection. Demand-responsive pickup/dropoff types and in-seat/interlining transfers are not implemented as passenger-ready options. No fare optimization, wheelchair filtering, turn-by-turn walking, or actual bus-path geometry is claimed. Map lines connect stops schematically. Walking uses straight-line distance × 1.25 at 80 m/min; initial boarding includes two extra minutes.
+The GTFS rules do not guarantee a bus will hold a connection. Demand-responsive pickup/dropoff types and in-seat/interlining transfers are not implemented as passenger-ready options. No fare optimization, wheelchair filtering, turn-by-turn walking, is claimed. Bus lines use the published trip shape clipped by GTFS distance along the shape; these are not recorded vehicle trails. Walking links remain schematic. Walking uses straight-line distance × 1.25 at 80 m/min; initial boarding includes two extra minutes.
 
 ## Feed lifecycle
 
@@ -71,3 +71,7 @@ Deterministic tests cover transfers, service dates, DST, API errors, timestamps,
 ### Search latency
 
 Transfer search orders first legs by their best possible score and keeps a conservative bound from the best 128 distinct trip chains. It skips candidates that cannot enter that set before allocating journey objects. The final ranking and 24-candidate live-check limit are unchanged. Nine real-feed comparisons across Leave now, Depart at, Arrive by, and 5/15/30-minute walks retained identical ranked time/transfer scores. The Reitz → Downtown 15-minute-walk local check fell from approximately 953 ms to 53 ms; hosted latency depends on instance load and live-provider responses.
+
+### Published route shapes
+
+The importer retains `shapes.txt`, trip `shape_id`, and stop-time `shape_dist_traveled`. Returned journey legs include geometry only for the boarding-to-alighting segment, using distance interpolation to handle loops and repeated stops. Missing or invalid geometry produces no bus line rather than a fabricated straight route. Blue/purple bus lines represent the published schedule path, not actual historical GPS travel or temporary detours. Green walking connections remain approximate. The live pink marker stays at the reported GPS position. No Google Maps API or billing is required.

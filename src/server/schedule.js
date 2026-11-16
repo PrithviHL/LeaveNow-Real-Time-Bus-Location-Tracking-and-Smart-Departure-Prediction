@@ -59,6 +59,7 @@ export class Schedule {
     if (data.schema !== 1 || data.timezone !== "America/New_York")
       throw new Error("Unsupported timetable artifact");
     this.data = data;
+    this.tripIndex = new Map(data.trips.map((t) => [t.id, t]));
     this.stops = data.stops;
     this.index = new Map(this.stops.map((s, i) => [s.id, i]));
     this.calendar = new Map(data.calendar.map((c) => [c.service_id, c]));
@@ -196,6 +197,8 @@ export class Schedule {
       route: r.short,
       headsign: t.headsign || r.name,
       direction: t.headsign || r.name,
+      fromSequence: i,
+      toSequence: j,
       from: a[0],
       to: b[0],
       boarding: { ...this.stops[a[0]] },
@@ -205,6 +208,42 @@ export class Schedule {
       scheduledDeparture: t.anchor + a[2] * 1000,
       scheduledArrival: t.anchor + b[1] * 1000,
       timingSource: "scheduled",
+    };
+  }
+  routeGeometry(leg) {
+    const trip = this.tripIndex.get(leg.tripId);
+    const shape = this.data.shapes?.[trip?.shape];
+    const from = trip?.stops[leg.fromSequence]?.[5];
+    const to = trip?.stops[leg.toSequence]?.[5];
+    // Distances keep the correct segment even on loops and repeated stops.
+    if (
+      !shape ||
+      shape.length < 2 ||
+      !Number.isFinite(from) ||
+      !Number.isFinite(to) ||
+      to <= from ||
+      shape.some((p) => !Number.isFinite(p[2])) ||
+      from < shape[0][2] ||
+      to > shape.at(-1)[2]
+    )
+      return null;
+    const interpolate = (d) => {
+      const right = lowerBound(shape, d, 2);
+      if (right === 0) return shape[0].slice(0, 2);
+      const a = shape[right - 1],
+        b = shape[right];
+      const fraction = b[2] === a[2] ? 0 : (d - a[2]) / (b[2] - a[2]);
+      return [a[0] + (b[0] - a[0]) * fraction, a[1] + (b[1] - a[1]) * fraction];
+    };
+    return {
+      source: "RTS GTFS shapes",
+      path: [
+        interpolate(from),
+        ...shape
+          .filter((p) => p[2] > from && p[2] < to)
+          .map((p) => p.slice(0, 2)),
+        interpolate(to),
+      ],
     };
   }
   search(
@@ -442,6 +481,8 @@ export class Schedule {
         return true;
       })
       .slice(0, 24);
+    for (const journey of base.journeys)
+      for (const leg of journey.legs) leg.geometry = this.routeGeometry(leg);
     base.departures = base.journeys.slice(0, 6).map((j) => ({
       stop: j.boarding,
       route: j.legs[0].route,

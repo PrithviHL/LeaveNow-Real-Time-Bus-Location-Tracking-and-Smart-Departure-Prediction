@@ -466,7 +466,7 @@ def show_results():
     )
     show_bus_tracking(trip, journey, legs[leg_index], light_map)
     st.caption(
-        "Connection lines are a guide, not a street-following bus or walking route."
+        "Blue/purple lines follow published RTS bus routes. Green walking links are approximate. Route lines do not show the live bus’s recorded travel history."
     )
     st.link_button(
         "Walking directions to your boarding stop ↗",

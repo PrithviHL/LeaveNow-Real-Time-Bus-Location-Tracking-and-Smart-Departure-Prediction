@@ -86,50 +86,76 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
         )
     ]
     if journey and origin and destination:
+        legs = journey.get("legs") or [journey]
+        paths = []
+        for index, leg in enumerate(legs):
+            geometry = leg.get("geometry")
+            if geometry and len(geometry.get("path", [])) >= 2:
+                paths.append(
+                    {
+                        "path": geometry["path"],
+                        "color": (
+                            [101, 178, 255, 220] if index == 0 else [180, 130, 255, 220]
+                        ),
+                        "label": f"Route {leg['route']}",
+                        "detail": "Published RTS route · not recorded vehicle history",
+                    }
+                )
+        walks = []
         connections = [
-            {
-                "path": [[origin["lon"], origin["lat"]]]
-                + [
-                    point
-                    for leg in journey.get(
-                        "legs",
-                        [
-                            {
-                                "boarding": journey["boarding"],
-                                "alighting": journey["alighting"],
-                            }
-                        ],
-                    )
-                    for point in [
-                        [leg["boarding"]["lon"], leg["boarding"]["lat"]],
-                        [leg["alighting"]["lon"], leg["alighting"]["lat"]],
-                    ]
-                ]
-                + [[destination["lon"], destination["lat"]]],
-                "label": "Connection guide",
-                "detail": "Not a street-following route",
-            }
+            (origin, legs[0]["boarding"]),
+            (legs[-1]["alighting"], destination),
         ]
+        connections += [(a["alighting"], b["boarding"]) for a, b in zip(legs, legs[1:])]
+        for a, b in connections:
+            walks.append(
+                {
+                    "path": [[a["lon"], a["lat"]], [b["lon"], b["lat"]]],
+                    "label": "Walking connection",
+                    "detail": "Approximate straight-line walk, not street directions",
+                }
+            )
+        if paths:
+            layers.insert(
+                0,
+                pdk.Layer(
+                    "PathLayer",
+                    paths,
+                    get_path="path",
+                    get_color="color",
+                    width_min_pixels=4,
+                    pickable=True,
+                ),
+            )
         layers.insert(
             0,
             pdk.Layer(
                 "PathLayer",
-                connections,
+                walks,
                 get_path="path",
-                get_color=[101, 178, 255, 160],
-                width_min_pixels=3,
+                get_color=[197, 242, 103, 120],
+                width_min_pixels=2,
                 pickable=True,
             ),
         )
+        if len(paths) < len(legs):
+            st.caption(
+                "Published route geometry is unavailable for one or more bus legs; their bus lines are hidden."
+            )
+    bounds = points + (
+        [{"position": p} for row in paths for p in row["path"]]
+        if journey and origin and destination
+        else []
+    )
     center = (
-        [sum(p["position"][i] for p in points) / len(points) for i in [0, 1]]
+        [sum(p["position"][i] for p in bounds) / len(bounds) for i in [0, 1]]
         if points
         else [-82.3394, 29.6516]
     )
     spread = max(
         (
             max(abs(p["position"][0] - center[0]), abs(p["position"][1] - center[1]))
-            for p in points
+            for p in bounds
         ),
         default=0,
     )

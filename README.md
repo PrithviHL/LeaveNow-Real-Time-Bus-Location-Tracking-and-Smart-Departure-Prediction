@@ -14,7 +14,7 @@ The live Streamlit application runs from **`feature/streamlit-containers`**. The
 4. Select **Find my next bus**. Review the walking legs, bus legs, boarding/alighting stops, transfer allowance, final arrival, and map.
 5. Check the timing label: **Live**, **Scheduled**, or **Live + Scheduled**. These indicate the source of the displayed times, not a guarantee that a service will run on time.
 
-Suggestions cover **RTS stop names**, not general street-address geocoding. Browser GPS requires permission. The map and timeline provide estimates; dotted connections are not street-following directions or actual bus route geometry. Results depend on the selected service date and provider availability.
+Suggestions cover **RTS stop names**, not general street-address geocoding. Browser GPS requires permission. The map and timeline provide estimates; green walking links are approximate; blue/purple bus paths follow published RTS GTFS shapes. Results depend on the selected service date and provider availability.
 
 ### Example inputs
 
