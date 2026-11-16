@@ -310,28 +310,40 @@ def show_bus_tracking(trip, journey, leg, light):
         if st.session_state.get(key) not in buses:
             st.session_state.pop(key, None)
         selected = st.selectbox(
-            "Choose the bus you want to board",
+            "Choose a live bus on this route",
             list(buses),
             index=None,
-            format_func=lambda id: f"Bus {id} · {buses[id]['destination']} · arrives {clock_time(buses[id]['arrivalAt'])}",
+            format_func=lambda id: f"Bus {id} · {buses[id]['destination']} · "
+            + (
+                f"arrives {clock_time(buses[id]['arrivalAt'])}"
+                if buses[id].get("arrivalAt")
+                else "GPS only · boarding ETA unavailable"
+            ),
             key=key,
             placeholder="Select a live bus",
         )
         if selected:
             bus = buses[selected]
-            minutes = max(0, math.ceil((bus["arrivalAt"] - time.time() * 1000) / 60000))
-            st.metric(
-                "Bus reaches your boarding stop",
-                "Due now" if minutes == 0 else f"{minutes} min",
-                clock_time(bus["arrivalAt"]),
-            )
+            if bus.get("arrivalAt"):
+                minutes = max(
+                    0, math.ceil((bus["arrivalAt"] - time.time() * 1000) / 60000)
+                )
+                st.metric(
+                    "Bus reaches your boarding stop",
+                    "Due now" if minutes == 0 else f"{minutes} min",
+                    clock_time(bus["arrivalAt"]),
+                )
+            else:
+                st.info(
+                    "Live GPS is available, but RTS has not provided an arrival prediction for this bus at your boarding stop. This vehicle is on the route; its direction and service to your destination are not confirmed. Check the destination sign before boarding."
+                )
             if not bus.get("position"):
                 st.info(
                     "Arrival prediction is available, but this bus has no fresh GPS position. Its marker is hidden until GPS returns."
                 )
         elif not buses:
             st.info(
-                "No fresh live bus arrival is available for this route at your boarding stop. Your scheduled journey remains shown below; check again closer to departure."
+                "No active bus with fresh GPS or a stop-arrival prediction is available on this route right now. The timetable above is a scheduled service, not confirmation that a vehicle is currently running. Check again closer to departure."
             )
         if data.get("partial"):
             st.warning("Some live tracking data is temporarily unavailable.")

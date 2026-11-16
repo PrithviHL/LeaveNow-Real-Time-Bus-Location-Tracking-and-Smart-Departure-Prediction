@@ -41,11 +41,36 @@ export async function trackBoarding(client, stop, route, now = Date.now()) {
     if (!buses.has(id) || arrivalAt < buses.get(id).arrivalAt)
       buses.set(id, bus);
   }
+  // A live vehicle may not yet have a prediction for the chosen stop.
+  // Offer its GPS separately without implying it is the scheduled trip.
+  for (const v of vehicles) {
+    const updatedAt = agencyTime(v.positionTimestamp);
+    if (
+      String(v.route) !== route ||
+      !v.id ||
+      buses.has(String(v.id)) ||
+      !inServiceArea(v) ||
+      !Number.isFinite(updatedAt) ||
+      updatedAt < now - 180000 ||
+      updatedAt > now + 60000
+    )
+      continue;
+    buses.set(String(v.id), {
+      id: String(v.id),
+      route,
+      destination: v.label || "Destination unconfirmed",
+      arrivalAt: null,
+      predictionAt: null,
+      position: { lat: v.lat, lon: v.lon, updatedAt },
+    });
+  }
   return {
     stop,
     route,
     checkedAt: now,
-    buses: [...buses.values()].sort((a, b) => a.arrivalAt - b.arrivalAt),
+    buses: [...buses.values()].sort(
+      (a, b) => (a.arrivalAt ?? Infinity) - (b.arrivalAt ?? Infinity),
+    ),
     partial:
       predictions.status === "rejected" || positions.status === "rejected",
   };

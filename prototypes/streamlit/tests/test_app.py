@@ -154,7 +154,7 @@ class AppTests(unittest.TestCase):
             selector = next(
                 s
                 for s in app.selectbox
-                if s.label == "Choose the bus you want to board"
+                if s.label == "Choose a live bus on this route"
             )
             selector.set_value("901").run()
             self.assertFalse(app.exception)
@@ -164,6 +164,20 @@ class AppTests(unittest.TestCase):
             self.assertEqual(
                 sum(c.args[0] == "/api/plan" for c in request.call_args_list), 1
             )
+
+    def test_gps_only_bus_can_be_selected_without_inventing_eta(self):
+        now = int(time.time()*1000)
+        def reply(endpoint, payload=None):
+            if endpoint.startswith("/api/tracking"):
+                return {"buses": [{"id":"902","route":"10","destination":"Downtown","arrivalAt":None,"position":{"lat":29.64,"lon":-82.34,"updatedAt":now}}]}
+            return trip_fixture()
+        with patch("client.api_request", side_effect=reply):
+            app = ready_app()
+            next(b for b in app.button if b.label == "Find my next bus").click().run()
+            next(s for s in app.selectbox if s.label == "Choose a live bus on this route").set_value("902").run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any("Live GPS is available" in i.value for i in app.info))
+            self.assertFalse(any(m.label == "Bus reaches your boarding stop" for m in app.metric))
 
     def test_successful_trip_renders_metrics(self):
         with patch("client.api_request", return_value=trip_fixture()):

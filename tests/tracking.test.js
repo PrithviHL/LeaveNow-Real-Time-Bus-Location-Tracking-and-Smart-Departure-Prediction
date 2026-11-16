@@ -93,3 +93,23 @@ test("tracking endpoint validates stop and route and returns only public trackin
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("route GPS is selectable without a stop prediction, with no invented ETA", async () => {
+  const result = await trackBoarding(
+    {
+      predictions: async () => [],
+      vehicles: async () => [
+        position("1"),
+        position("2", "20"),
+        position("3", "17", now - 600000),
+      ],
+    },
+    stop,
+    "17",
+    now,
+  );
+  assert.equal(result.buses.length, 1);
+  assert.equal(result.buses[0].id, "1");
+  assert.equal(result.buses[0].arrivalAt, null);
+  assert.ok(result.buses[0].position);
+});
