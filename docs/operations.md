@@ -4,7 +4,7 @@
 
 | Variable      | Required | Default | Meaning                           |
 | ------------- | -------- | ------- | --------------------------------- |
-| `RTS_API_KEY` | Yes      | None    | Server-side RTS access credential |
+| `GAINESVILLE_RTS_API_KEY` | Yes      | None    | Server-side RTS access credential |
 | `PORT`        | No       | 3001    | Integer TCP port, 1–65535         |
 
 The server reads the root `.env` using Node’s native environment loader. Existing environment variables take precedence. Use `.env.example` as the schema and never commit `.env`. No dependency installation, model runtime, Python environment, or database is required.
@@ -27,9 +27,9 @@ The health route checks local readiness/configuration. A stop search exercises t
 | Symptom                        | Check                                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------------- |
 | Connection refused             | Ensure the process is running and PORT matches the browser URL                              |
-| Missing API key at startup     | Set RTS_API_KEY in the root .env                                                            |
+| Missing API key at startup     | Set GAINESVILLE_RTS_API_KEY in the root .env                                                            |
 | Credential rejected            | Confirm the credential is active with RTS; do not paste keys in logs/issues                 |
-| No stops near origin           | Confirm device location and Rochester coverage; choose a map pin or raise walking allowance |
+| No stops near origin           | Confirm device location and Gainesville coverage; choose a map pin or raise walking allowance |
 | No direct trip                 | The current prediction window may not cover a direct journey; transfers are unsupported     |
 | Old or missing vehicle markers | Stale positions are removed; check the provider and network connection                      |
 | Location permission denied     | Search a stop, enter coordinates, or place a map pin                                        |

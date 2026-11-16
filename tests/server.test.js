@@ -6,7 +6,7 @@ test("HTTP validation, stop search, static files and origin boundaries", async (
   const client = {
     key: "test-secret",
     stops: async () => [
-      { id: "1", name: "East & Alexander", lat: 43.155, lon: -77.594 },
+      { id: "1", name: "Reitz Union", lat: 29.64514, lon: -82.346983 },
     ],
     vehicles: async () => [],
   };
@@ -22,12 +22,25 @@ test("HTTP validation, stop search, static files and origin boundaries", async (
     assert.ok(!JSON.stringify(health).includes("test-secret"));
     const catalog = await (await fetch(base + "/api/stops")).json();
     assert.deepEqual(catalog.results, [
-      { id: "1", name: "East & Alexander", lat: 43.155, lon: -77.594 },
+      { id: "1", name: "Reitz Union", lat: 29.64514, lon: -82.346983 },
     ]);
     assert.ok(!JSON.stringify(catalog).includes("test-secret"));
-    const stops = await (await fetch(base + "/api/places?q=East")).json();
+    const stops = await (await fetch(base + "/api/places?q=Reitz")).json();
     assert.equal(stops.results[0].id, "1");
     assert.equal((await fetch(base + "/api/places?q=x")).status, 400);
+    assert.equal(
+      (
+        await fetch(base + "/api/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            origin: { lat: 43.15, lon: -77.6 },
+            destination: { lat: 43.18, lon: -77.6 },
+          }),
+        })
+      ).status,
+      400,
+    );
     assert.equal((await fetch(base + "/.env")).status, 404);
     assert.equal(
       (

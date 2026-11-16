@@ -19,7 +19,7 @@ flowchart LR
 | `src/server/config.js`  | Validate API key and port                                                            |
 | `src/server/app.js`     | HTTP routes, input/origin/host validation, static asset serving                      |
 | `src/server/transit.js` | HTTPS RTS requests, timeouts, normalization, cache and concurrent-request coalescing |
-| `src/server/planner.js` | Distance, walking estimates, Rochester timestamps, fresh prediction matching         |
+| `src/server/planner.js` | Distance, walking estimates, Gainesville timestamps, fresh prediction matching         |
 | `public/app.js`         | Form state, permission handling, stop selection, map layers, results and refreshing  |
 
 ## Planning sequence

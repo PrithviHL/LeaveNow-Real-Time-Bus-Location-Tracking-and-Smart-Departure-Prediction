@@ -27,3 +27,10 @@
 - Organized research reports and the historical Streamlit submission under documented archive/legacy paths.
 - Removed the embedded historical RTS credential from source copies; retained existing Git history.
 - Added architecture, API, operations, validation, contribution, security, and vendor documentation.
+
+## Gainesville RTS migration
+
+- Restrict planning, stops, vehicles, and map defaults to Gainesville, Florida.
+- Integrate Clever Devices BusTime v3 with a server-only Gainesville credential.
+- Import official Gainesville GTFS and preserve honest Scheduled/live trip matching.
+- Update sample journeys, deployment instructions, and regression tests.

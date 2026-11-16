@@ -9,7 +9,7 @@ import {
   buildJourneys,
   planTrip,
 } from "../src/server/planner.js";
-const now = Date.parse("2026-11-14T23:00:00Z"); // 6 PM Rochester
+const now = Date.parse("2026-11-14T23:00:00Z"); // 6 PM Gainesville
 const from = {
   id: "a",
   name: "Boarding",
@@ -49,7 +49,7 @@ function matches(a = {}, b = {}) {
     now,
   );
 }
-test("agency timestamps use Rochester timezone in winter, summer and at midnight", () => {
+test("agency timestamps use Gainesville timezone in winter, summer and at midnight", () => {
   assert.equal(agencyTime("11/14/2026 6:00:00 PM"), now);
   assert.equal(
     agencyTime("7/14/2026 6:00:00 PM"),

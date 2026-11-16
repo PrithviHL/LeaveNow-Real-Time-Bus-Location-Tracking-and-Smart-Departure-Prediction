@@ -5,8 +5,8 @@ The main Streamlit planner combines the official RTS GTFS schedule with availabl
 ## Travel controls
 
 - **Leave now:** find catchable journeys from the current instant, including later scheduled departures.
-- **Depart at:** leave no earlier than the selected Rochester date/time.
-- **Arrive by:** reach the final destination, including the final walk, by the selected Rochester date/time. Rank valid journeys by latest leave-by time.
+- **Depart at:** leave no earlier than the selected Gainesville date/time.
+- **Arrive by:** reach the final destination, including the final walk, by the selected Gainesville date/time. Rank valid journeys by latest leave-by time.
 - **Allow one transfer:** include two-bus journeys; turn off for direct-only options.
 - **Minimum transfer buffer:** choose 3, 5, 8, or 10 minutes in addition to the transfer walk. A longer GTFS minimum overrides the shorter estimate.
 
@@ -44,7 +44,7 @@ The GTFS rules do not guarantee a bus will hold a connection. Demand-responsive 
 
 ## Feed lifecycle
 
-Source: https://scheduledata.rgrta.com/google_transit.zip
+Source: https://go-rts.com/wp-content/uploads/2026/08/RTSGTFS_Fall2026-1.zip
 
 ```sh
 npm run gtfs:import
@@ -56,12 +56,14 @@ The importer uses standard-library ZIP/CSV readers, validates required tables/ti
 
 Docker builds fetch and compile the official feed into the image; the raw ZIP and data artifacts are not committed. The Node service loads it once and maintains a small bounded service-day cache. There is no database or paid storage dependency.
 
-**Refresh by reimporting/restarting locally, or rebuilding/redeploying the image.** This is build-time ingestion, not an automatic daily data sync. Monitor feed dates before expiry. Requests outside feed coverage show an explicit message; previous-day late-night trips remain eligible after the nominal final service date. The current imported feed was `JunSept26_Merged`, covering June 29, 2026 through January 3, 2027. The app shows feed provenance and the date range.
+**Refresh by reimporting/restarting locally, or rebuilding/redeploying the image.** This is build-time ingestion, not an automatic daily data sync. Monitor feed dates before expiry. Requests outside feed coverage show an explicit message; previous-day late-night trips remain eligible after the nominal final service date. The current feed covers August 17, 2026 through May 2, 2027. The app shows feed provenance and the date range.
 
-Review the provider's [data-use terms](https://scheduledata.rgrta.com/License%20Agreement%20and%20Terms%20of%20Use.pdf). Attribute the schedule to RTS and retain the existing live API secret only on the server. GTFS download and routing use no secret.
+Data source: [Gainesville RTS data](https://go-rts.com/rts-data/). GTFS download and routing use no secret. The importer strips whitespace from CSV fields and rejects stops outside Gainesville. The November 2026 feed contains 972 stops and 3,321 trips, with service dates August 17, 2026–May 2, 2027.
+
+## Live integration
+
+Clever Devices BusTime v3 runs at `https://riderts.app/bustime/api/v3/`. The server discovers its data feed (or uses `GAINESVILLE_RTS_FEED`), batches vehicle lookups into at most ten routes, and normalizes compact local timestamps and Unix milliseconds. Only exact `origtatripno`/`tatripid` matches to GTFS trip IDs enable live timetable overlays. Otherwise journeys remain explicitly Scheduled.
 
 ## Verification
 
-Deterministic tests cover direct vs transfer choices, departure/arrival constraints, transfer bans/scopes/minimums, missed connections after live delays, calendar exceptions, pickup/dropoff restrictions, overnight service, DST, source labels, importer failures, and UI payload/timeline rendering.
-
-Real-feed smoke checks on November 15, 2026 found later Route 10 departures for East & Alexander → Park & Berkeley, and an Airport & Terminal Lower Level → Park & Berkeley transfer on Routes 23 and 10 for a future morning request. These are test observations, not permanently guaranteed services.
+Deterministic tests cover transfers, service dates, DST, API errors, timestamps, geographic limits, and secret isolation. Real-feed checks found direct Reitz-area → Rosa Parks journeys and a two-leg Route 37 → Route 1 option. These are observations, not guaranteed departures.

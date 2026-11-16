@@ -8,10 +8,10 @@ import io
 import json
 from pathlib import Path
 from datetime import datetime, timezone
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 import zipfile
 
-URL = "https://scheduledata.rgrta.com/google_transit.zip"
+URL = "https://go-rts.com/wp-content/uploads/2026/08/RTSGTFS_Fall2026-1.zip"
 
 
 def compile_feed(raw):
@@ -23,7 +23,12 @@ def compile_feed(raw):
             if name not in archive.namelist():
                 return
             with io.TextIOWrapper(archive.open(name), encoding="utf-8-sig") as stream:
-                yield from csv.DictReader(stream)
+                for row in csv.DictReader(stream):
+                    yield {
+                        key.strip(): value.strip() if isinstance(value, str) else value
+                        for key, value in row.items()
+                        if key is not None
+                    }
 
         def rows(name):
             return list(iter_rows(name))
@@ -32,7 +37,7 @@ def compile_feed(raw):
         if not agency or any(
             a.get("agency_timezone") != "America/New_York" for a in agency
         ):
-            raise ValueError("Expected a Rochester America/New_York feed")
+            raise ValueError("Expected an America/New_York feed")
         for name in ["stops.txt", "routes.txt", "trips.txt", "stop_times.txt"]:
             if name not in archive.namelist():
                 raise ValueError("Missing required GTFS table: " + name)
@@ -129,11 +134,25 @@ if __name__ == "__main__":
     if args.zip:
         raw = args.zip.read_bytes()
     else:
-        with urlopen(URL, timeout=60) as response:
+        with urlopen(
+            Request(
+                URL,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+                    "Referer": "https://go-rts.com/rts-data/",
+                    "Accept": "*/*",
+                },
+            ),
+            timeout=60,
+        ) as response:
             raw = response.read(20_000_001)
         if len(raw) > 20_000_000:
             raise ValueError("GTFS download exceeds 20 MB")
     data = compile_feed(raw)
+    if not data["stops"] or not all(
+        29.35 <= s["lat"] <= 30.1 and -82.9 <= s["lon"] <= -81.9 for s in data["stops"]
+    ):
+        raise ValueError("Only Gainesville RTS stops are accepted by this deployment")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix(".tmp")
     with gzip.open(temporary, "wt", encoding="utf-8") as output:

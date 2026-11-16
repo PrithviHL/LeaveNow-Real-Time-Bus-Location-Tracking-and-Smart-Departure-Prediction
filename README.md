@@ -1,6 +1,6 @@
 # LeaveNow
 
-**Your next bus, figured out.** A Rochester RTS trip planner that combines published timetables with available live predictions to find nearby stops, direct or one-transfer journeys, and when to leave.
+**Your next bus, figured out.** A Gainesville RTS trip planner that combines published timetables with available live predictions to find nearby stops, direct or one-transfer journeys, and when to leave.
 
 **[Open the live app](https://leavenow-prithvihl.onrender.com)** · [Routing rules](docs/timetable-routing.md) · [Deployment](docs/public-deployment.md) · [Google sign-in](docs/google-sign-in.md)
 
@@ -20,9 +20,9 @@ Suggestions cover **RTS stop names**, not general street-address geocoding. Brow
 
 | Starting stop | Destination | Useful check |
 | --- | --- | --- |
-| East & Alexander | Park & Berkeley | Nearby stops and a short journey |
-| Airport & Terminal Lower Level | Park & Berkeley | Transfer-enabled vs direct-only results |
-| RTS Transit Center | Strong Memorial Hospital | Downtown/hospital journey and future time controls |
+| Reitz Union | Rosa Parks RTS Downtown Station | Nearby stops and a short journey |
+| Museum Walk Apartments | Rosa Parks RTS Downtown Station | Transfer-enabled vs direct-only results |
+| Rosa Parks RTS Downtown Station | Shands North Tower | Downtown/hospital journey and future time controls |
 
 Use a future weekday during service hours to test **Depart at** and **Arrive by**. These are test inputs, not promises of a particular bus or connection. Live predictions usually cover a shorter window than the timetable.
 
@@ -48,8 +48,8 @@ Requires Node.js 22.9+, Git, Python 3.12, an RTS credential, and Google OAuth co
 git clone --branch feature/streamlit-containers https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction.git
 cd LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction
 # On a new checkout only; keep any existing .env.
-cp .env.example .env
-# Set RTS_API_KEY in the ignored .env.
+cp .env.example .env.gainesville
+# Set GAINESVILLE_RTS_API_KEY in the ignored .env.gainesville.
 python3 scripts/import-gtfs.py
 npm start
 ```
@@ -78,7 +78,7 @@ Open [localhost:8501](http://localhost:8501). Configure the ignored `.streamlit/
 
 The free Render service can sleep when idle. The service display name is `leavenow`; its actual public hostname still includes `prithvihl`. Use the verified URL above when sharing it, including on LinkedIn.
 
-Store `RTS_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_COOKIE_SECRET`, and `AUTH_REDIRECT_URI` in Render's environment settings. Preserve a stable random auth cookie secret. The supervisor writes Google's configuration to a private runtime-only file. Do not commit keys, cookies, or secret files. Deployment security details and the existing RTS credential policy are documented in [public deployment](docs/public-deployment.md).
+Store `GAINESVILLE_RTS_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_COOKIE_SECRET`, and `AUTH_REDIRECT_URI` in Render's environment settings. Preserve a stable random auth cookie secret. The supervisor writes Google's configuration to a private runtime-only file. Do not commit keys, cookies, or secret files. Deployment security details and the existing RTS credential policy are documented in [public deployment](docs/public-deployment.md).
 
 ## Docker and Kubernetes
 
@@ -119,4 +119,4 @@ Tests cover routing, service calendars, overnight trips, live overlay checks, AP
 - [Docker and Kubernetes](docs/streamlit-containers.md) · [Testing](docs/testing.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Change log](CHANGELOG.md)
 
-Data: [RTS](https://www.myrts.com/RGRTA-API). Maps: [OpenStreetMap](https://www.openstreetmap.org/copyright). The original HTML interface includes Leaflet under its [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md). Archived claims about model accuracy, AWS, or research deployments are not claims about the current application.
+Data: [RTS](https://go-rts.com/rts-data/). Maps: [OpenStreetMap](https://www.openstreetmap.org/copyright). The original HTML interface includes Leaflet under its [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md). Archived claims about model accuracy, AWS, or research deployments are not claims about the current application.

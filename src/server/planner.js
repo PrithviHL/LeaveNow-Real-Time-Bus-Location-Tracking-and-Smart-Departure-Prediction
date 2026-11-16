@@ -65,7 +65,28 @@ const zoneParts = new Intl.DateTimeFormat("en-US", {
   hourCycle: "h23",
 });
 export function agencyTime(text) {
+  if (
+    typeof text === "number" ||
+    (typeof text === "string" && /^\d{13}$/.test(text))
+  ) {
+    const value = Number(text);
+    return Number.isFinite(value) &&
+      value >= 1_000_000_000_000 &&
+      value <= 4_000_000_000_000
+      ? value
+      : NaN;
+  }
   if (typeof text !== "string") return NaN;
+  const compact = text.match(
+    /^(\d{4})(\d{2})(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?$/,
+  );
+  if (compact) {
+    const hour = Number(compact[4]);
+    if (hour > 23) return NaN;
+    return agencyTime(
+      `${compact[2]}/${compact[3]}/${compact[1]} ${hour % 12 || 12}:${compact[5]}:${compact[6] || "00"} ${hour >= 12 ? "PM" : "AM"}`,
+    );
+  }
   const m = text.match(
     /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)$/i,
   );
@@ -160,8 +181,9 @@ export function buildJourneys(
             continue;
           // A trip must be from the same service date and agree on the vehicle when provided.
           if (
-            String(departure.Timestamp).split(" ")[0] !==
-            String(arrival.Timestamp).split(" ")[0]
+            Math.abs(
+              agencyTime(departure.Timestamp) - agencyTime(arrival.Timestamp),
+            ) > MAX_FEED_AGE
           )
             continue;
           if (
@@ -268,7 +290,7 @@ export async function planTrip(
   let reason = null;
   if (!origins.length)
     reason =
-      "No RTS stops within your walking limit of the starting location. Try a nearby stop or increase the walking limit. RTS serves the Rochester area.";
+      "No RTS stops within your walking limit of the starting location. Try a nearby stop or increase the walking limit. RTS serves the Gainesville, Florida area.";
   else if (!destinations.length)
     reason =
       "No RTS stops within your walking limit of the destination. Choose another location or increase the walking limit.";

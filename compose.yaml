@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: deploy/docker/api.Dockerfile
     environment:
-      RTS_API_KEY: ${RTS_API_KEY:?Set RTS_API_KEY in the root .env file}
+      GAINESVILLE_RTS_API_KEY: ${GAINESVILLE_RTS_API_KEY:?Set GAINESVILLE_RTS_API_KEY in the root .env file}
       HOST: 0.0.0.0
       PORT: "3001"
       ALLOWED_HOSTS: api

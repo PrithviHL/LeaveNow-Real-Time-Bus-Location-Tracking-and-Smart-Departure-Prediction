@@ -9,7 +9,7 @@ const state = {
   lastVehicles: [],
 };
 const map = L.map("map", { zoomControl: false }).setView(
-  [43.157, -77.6109],
+  [29.6516, -82.3394],
   13,
 );
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -177,7 +177,7 @@ $("#recenter").onclick = () => {
       ),
       true,
     );
-  else map.setView([43.157, -77.6109], 13);
+  else map.setView([29.6516, -82.3394], 13);
 };
 function hideSuggestions(key) {
   $(`#${key}-results`).hidden = true;
@@ -535,7 +535,7 @@ function renderPlan(plan, selectedId = state.selectedJourneyId) {
   container.append(
     el(
       "p",
-      "Times are in Rochester local time. Walking is estimated, not street-routed. Dotted lines show connections only. Live times can change.",
+      "Times are in Gainesville local time. Walking is estimated, not street-routed. Dotted lines show connections only. Live times can change.",
       "walking-note",
     ),
   );
@@ -597,10 +597,10 @@ $("#planner").onsubmit = (e) => {
 $("#max-walk").onchange = invalidate;
 $("#sample").onclick = async () => {
   try {
-    status("Finding a Rochester example…");
+    status("Finding a Gainesville example…");
     const [a, b] = await Promise.all([
-      api("/api/places?q=East%20Alexander"),
-      api("/api/places?q=Park%20Berkeley"),
+      api("/api/places?q=Reitz%20Union"),
+      api("/api/places?q=Rosa%20Parks"),
     ]);
     if (!a.results.length || !b.results.length)
       throw new Error(

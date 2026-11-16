@@ -16,13 +16,17 @@ spec.loader.exec_module(module)
 class PublicEntryTests(unittest.TestCase):
     def test_key_is_removed_from_ui_and_api_stays_on_loopback(self):
         port, api, ui = module.child_environments(
-            {"RTS_API_KEY": "new-test-credential", "PORT": "10000", "HOST": "0.0.0.0"}
+            {
+                "GAINESVILLE_RTS_API_KEY": "new-test-credential",
+                "PORT": "10000",
+                "HOST": "0.0.0.0",
+            }
         )
         self.assertEqual(port, 10000)
         self.assertEqual(api["HOST"], "127.0.0.1")
         self.assertEqual(api["PORT"], "3001")
-        self.assertEqual(api["RTS_API_KEY"], "new-test-credential")
-        self.assertNotIn("RTS_API_KEY", ui)
+        self.assertEqual(api["GAINESVILLE_RTS_API_KEY"], "new-test-credential")
+        self.assertNotIn("GAINESVILLE_RTS_API_KEY", ui)
         self.assertEqual(ui["LEAVENOW_API_CONFIGURED"], "1")
         self.assertTrue(ui["STREAMLIT_SERVER_COOKIE_SECRET"])
 

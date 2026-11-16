@@ -10,7 +10,7 @@ Returns application readiness and whether an API credential is configured. This 
 {
   "ok": true,
   "configured": true,
-  "service": "RTS Rochester",
+  "service": "RTS Gainesville",
   "timeZone": "America/New_York"
 }
 ```
@@ -24,7 +24,7 @@ Searches provider stop names (all query words) or an exact stop ID. Query length
   "results": [
     {
       "id": "1007",
-      "name": "East & Alexander",
+      "name": "Reitz Union",
       "lat": 43.155062,
       "lon": -77.594633
     }

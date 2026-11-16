@@ -34,13 +34,13 @@ if st.user.get("is_logged_in", False):
     navigation, account = st.columns([5, 1.3], vertical_alignment="center")
     with navigation:
         markup(
-            '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
+            '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">GAINESVILLE, FL / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
         )
     with account:
         account_menu()
 else:
     markup(
-        '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">ROCHESTER, NY / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
+        '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">GAINESVILLE, FL / RTS TRANSIT</div><div class="ln-live"><span class="ln-dot"></span>LIVE + SCHEDULED JOURNEYS</div></div>'
     )
 markup(
     '<div class="ln-hero"><div class="ln-eyebrow">THE CITY IS MOVING. SO CAN YOU.</div><h1>Less waiting.<br><span>More going.</span></h1><p>Your nearest stop. The right bus. A little more time for everything else.</p></div>'
@@ -55,7 +55,7 @@ if not api_enabled:
 
 
 def apply_preset(reverse=False):
-    a, b = (43.155028, -77.594012), (43.148116, -77.578088)
+    a, b = (29.64514, -82.346983), (29.645567, -82.322697)
     if reverse:
         a, b = b, a
     for key, values in [("origin", a), ("destination", b)]:
@@ -78,9 +78,9 @@ def swap_locations():
 
 markup('<div class="ln-kicker">TAKE IT FOR A SPIN · REAL LOCATIONS, LIVE RESULTS</div>')
 preset_a, preset_b, spacer = st.columns([1, 1, 2])
-preset_a.button("↗ East → Park", on_click=apply_preset, use_container_width=True)
+preset_a.button("↗ Reitz → Downtown", on_click=apply_preset, use_container_width=True)
 preset_b.button(
-    "↙ Park → East", on_click=apply_preset, args=(True,), use_container_width=True
+    "↙ Downtown → Reitz", on_click=apply_preset, args=(True,), use_container_width=True
 )
 
 
@@ -109,7 +109,7 @@ def choose_stop(key, label):
         options=list(by_id),
         index=None,
         format_func=lambda stop_id: f"{by_id[stop_id]['name']} · stop {stop_id}",
-        placeholder="Type a stop or destination, e.g. East, Park, Airport…",
+        placeholder="Type a stop or destination, e.g. Reitz, Rosa Parks, Shands…",
         filter_mode="fuzzy",
         key=key + "_stop",
     )
@@ -126,23 +126,23 @@ def choose_coordinates(key):
     col1, col2 = st.columns(2)
     lat = col1.number_input(
         "Latitude",
-        min_value=-90.0,
-        max_value=90.0,
-        value=43.155028 if key == "origin" else 43.148116,
+        min_value=29.35,
+        max_value=30.1,
+        value=29.64514 if key == "origin" else 29.645567,
         format="%.6f",
         key=key + "_lat",
     )
     lon = col2.number_input(
         "Longitude",
-        min_value=-180.0,
-        max_value=180.0,
-        value=-77.594012 if key == "origin" else -77.578088,
+        min_value=-82.9,
+        max_value=-81.9,
+        value=-82.346983 if key == "origin" else -82.322697,
         format="%.6f",
         key=key + "_lon",
     )
     if key == "destination":
         st.caption(
-            "Enter your actual destination coordinates; defaults are only a Rochester example."
+            "Enter your actual destination coordinates; defaults are only a Gainesville example."
         )
     return coordinate(lat, lon)
 
@@ -242,7 +242,7 @@ if mode != "leave_now":
     local_now = datetime.now(ZoneInfo("America/New_York"))
     day_col, time_col = st.columns(2)
     day = day_col.date_input(
-        "Travel date · Rochester",
+        "Travel date · Gainesville",
         value=local_now.date(),
         min_value=local_now.date(),
         max_value=(local_now + timedelta(days=14)).date(),
@@ -302,7 +302,7 @@ def show_results():
     except ApiError as error:
         st.error(str(error))
         return
-    st.caption("Checked " + clock_time(plan["checkedAt"]) + " · Rochester local time")
+    st.caption("Checked " + clock_time(plan["checkedAt"]) + " · Gainesville local time")
     if plan["partial"]:
         st.warning("Some stops could not be checked. Results may be incomplete.")
     nearest = plan.get("nearestStop")
@@ -394,5 +394,5 @@ with st.expander("How this prototype works"):
     )
 
 markup(
-    '<div class="ln-footer"><span>BUILT FOR THE JOURNEY, NOT THE WAIT.</span><span>LEAVENOW / ROCHESTER</span></div>'
+    '<div class="ln-footer"><span>BUILT FOR THE JOURNEY, NOT THE WAIT.</span><span>LEAVENOW / GAINESVILLE</span></div>'
 )

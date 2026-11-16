@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Location-aware Rochester RTS bus departure planner",
+  "description": "Location-aware Gainesville RTS bus departure planner",
   "engines": {
     "node": ">=22.9.0"
   },

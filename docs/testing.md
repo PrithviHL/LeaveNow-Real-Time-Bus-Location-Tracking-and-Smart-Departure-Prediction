@@ -8,7 +8,7 @@
 
 The suite exercises:
 
-- Rochester timezone conversion across summer/winter and AM/PM boundaries
+- Gainesville timezone conversion across summer/winter and AM/PM boundaries
 - Coordinate validation, stop normalization, distance and walking rules
 - Matching downstream stops on the same trip and vehicle
 - Rejection of wrong-trip, wrong-direction, stale, malformed, and uncatchable predictions
@@ -21,7 +21,7 @@ CI runs syntax/credential checks and coverage tests on Node 22 and 24. Passing l
 
 ## Live smoke check
 
-On November 14, 2026, a real RTS request for East & Alexander → Park & Berkeley returned a direct Route 10 match, with matching trip identity, downstream ETA, a walking allowance, and no failed stop requests. The endpoint returned six candidate stops at each end. Live data depends on the current time and service and is not snapshotted into tests or presented as a permanent schedule.
+On November 14, 2026, a real RTS request for Reitz Union → Rosa Parks RTS Downtown Station returned a direct Route 10 match, with matching trip identity, downstream ETA, a walking allowance, and no failed stop requests. The endpoint returned six candidate stops at each end. Live data depends on the current time and service and is not snapshotted into tests or presented as a permanent schedule.
 
 Useful local smoke request:
 

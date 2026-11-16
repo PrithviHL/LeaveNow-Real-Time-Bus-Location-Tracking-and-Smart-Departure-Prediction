@@ -19,7 +19,7 @@ Browser (GPS, stop search, coordinates)
       → RTS HTTPS API
 ```
 
-Only the Node API receives `RTS_API_KEY`. Streamlit reads `LEAVENOW_API_URL` server-side. GPS uses the `streamlit-geolocation` component and requires a user click plus browser permission. Search and coordinates are available when GPS is unavailable. Maps and the geolocation component require actual browser verification; Python AppTest checks server-rendered UI logic.
+Only the Node API receives `GAINESVILLE_RTS_API_KEY`. Streamlit reads `LEAVENOW_API_URL` server-side. GPS uses the `streamlit-geolocation` component and requires a user click plus browser permission. Search and coordinates are available when GPS is unavailable. Maps and the geolocation component require actual browser verification; Python AppTest checks server-rendered UI logic.
 
 The live direct-trip overlay checks include: nearby stops at each end, matching live trip and vehicle, downstream destination ETA, fresh predictions, sufficient walking time, and a two-minute boarding buffer. Direct and one-transfer timetable journeys, future departure/arrival controls, and live overlays are described in [timetable routing](timetable-routing.md).
 
@@ -28,7 +28,7 @@ The live direct-trip overlay checks include: nearby stops at each end, matching 
 Install Docker Engine/Docker Desktop with Compose, then start Docker. From the repository root:
 
 ```sh
-# Use the existing ignored .env, or create it from .env.example and set RTS_API_KEY.
+# Use the existing ignored .env, or create it from .env.example and set GAINESVILLE_RTS_API_KEY.
 docker compose up --build --wait
 ```
 
@@ -57,7 +57,7 @@ kubectl -n leavenow rollout status deployment/leavenow-streamlit
 kubectl -n leavenow port-forward service/leavenow-streamlit 8501:80
 ```
 
-Open http://localhost:8501 while port forwarding remains running. The secret helper reads the local ignored `.env` (or `RTS_API_KEY` environment variable) and streams a Secret to kubectl without placing the key in a command argument or tracked manifest. Do not run the helper alone in a logged terminal or redirect its secret output into a tracked file. Kubernetes Secrets require appropriate cluster RBAC and encryption-at-rest configuration; base64 is not encryption.
+Open http://localhost:8501 while port forwarding remains running. The secret helper reads the local ignored `.env` (or `GAINESVILLE_RTS_API_KEY` environment variable) and streams a Secret to kubectl without placing the key in a command argument or tracked manifest. Do not run the helper alone in a logged terminal or redirect its secret output into a tracked file. Kubernetes Secrets require appropriate cluster RBAC and encryption-at-rest configuration; base64 is not encryption.
 
 For an existing cluster, select and review your kubectl context first. Publish both images to your registry and use a Kustomize overlay to replace `leavenow-api` and `leavenow-streamlit` with registry references. `IfNotPresent` supports kind-loaded images; production releases should use immutable image tags/digests. The committed base deliberately uses ClusterIP services and no public ingress.
 
@@ -99,7 +99,7 @@ The Streamlit UI defaults to API port 3001. If the backend uses another port, se
 
 | Service   | Variable           | Default               | Purpose                                                                 |
 | --------- | ------------------ | --------------------- | ----------------------------------------------------------------------- |
-| API       | `RTS_API_KEY`      | required              | Provider credential, server only                                        |
+| API       | `GAINESVILLE_RTS_API_KEY`      | required              | Provider credential, server only                                        |
 | API       | `PORT`             | 3001                  | HTTP port                                                               |
 | API       | `HOST`             | 127.0.0.1             | Bind address; explicitly use 0.0.0.0 in containers                      |
 | API       | `ALLOWED_HOSTS`    | localhost aliases     | Add explicit internal service hostnames, comma-separated, without ports |

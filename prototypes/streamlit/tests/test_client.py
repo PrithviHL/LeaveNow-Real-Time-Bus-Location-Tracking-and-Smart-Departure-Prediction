@@ -27,7 +27,7 @@ class ClientTests(unittest.TestCase):
     def test_timezone_conversion(self):
         self.assertEqual(clock_time(1794697200000), "6:00 PM")
 
-    def test_rochester_travel_controls_handle_timezone_and_invalid_dst_time(self):
+    def test_gainesville_travel_controls_handle_timezone_and_invalid_dst_time(self):
         from datetime import date, time
 
         self.assertEqual(

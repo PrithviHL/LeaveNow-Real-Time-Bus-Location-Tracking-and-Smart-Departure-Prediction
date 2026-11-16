@@ -81,7 +81,7 @@ def clock_time(timestamp):
 
 
 def travel_timestamp(day, clock):
-    """Convert a Rochester wall time to UTC and reject nonexistent DST times."""
+    """Convert a Gainesville wall time to UTC and reject nonexistent DST times."""
     zone = ZoneInfo("America/New_York")
     value = datetime.combine(day, clock).replace(tzinfo=zone)
     if datetime.fromtimestamp(value.timestamp(), zone).replace(

@@ -113,7 +113,7 @@ def map_view(origin=None, destination=None, journey=None, light=False):
     center = (
         [sum(p["position"][i] for p in points) / len(points) for i in [0, 1]]
         if points
-        else [-77.6109, 43.157]
+        else [-82.3394, 29.6516]
     )
     spread = max(
         (

@@ -2,23 +2,25 @@ import http from "node:http";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { TransitClient } from "./transit.js";
+import { BusTimeClient } from "./bustime.js";
+import { validateGainesvilleFeed } from "./gainesville.js";
 import { handler } from "./app.js";
 import { readConfig } from "./config.js";
 import { Schedule } from "./schedule.js";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const envPath = path.join(root, ".env");
+const envPath = path.join(root, ".env.gainesville");
 if (existsSync(envPath)) process.loadEnvFile(envPath);
 const config = readConfig(process.env);
 const feedPath = process.env.GTFS_PATH || path.join(root, "data/gtfs.json.gz");
 const schedule = existsSync(feedPath) ? Schedule.load(feedPath) : null;
+validateGainesvilleFeed(schedule);
 if (schedule)
   console.log(
     `Timetable ready: ${schedule.stops.length} stops; feed ${schedule.metadata().version}`,
   );
 const server = http.createServer(
-  handler(new TransitClient(config.apiKey), {
+  handler(new BusTimeClient(config.apiKey, { schedule, feed: config.feed }), {
     allowedHosts: config.allowedHosts,
     schedule,
   }),

@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def safe_api_key(value, allow_existing=False):
-    if not value or not value.strip() or value == "your-rts-api-key":
+    if not value or not value.strip() or value in ("your-rts-api-key", "your-gainesville-rts-api-key"):
         return False
     if allow_existing:
         return True
@@ -35,7 +35,7 @@ def child_environments(env):
             "Public PORT must be valid and different from the private API port 3001."
         )
     api_env = dict(
-        env,
+        {k: v for k, v in env.items() if k != "RTS_API_KEY"},
         HOST="127.0.0.1",
         PORT="3001",
         ALLOWED_HOSTS="",
@@ -53,6 +53,7 @@ def child_environments(env):
         if k
         not in (
             "RTS_API_KEY",
+            "GAINESVILLE_RTS_API_KEY",
             "GOOGLE_CLIENT_ID",
             "GOOGLE_CLIENT_SECRET",
             "AUTH_COOKIE_SECRET",
@@ -64,9 +65,7 @@ def child_environments(env):
         LEAVENOW_API_CONFIGURED=(
             "1"
             if safe_api_key(
-                env.get("RTS_API_KEY"),
-                allow_existing=env.get("ALLOW_EXISTING_RTS_KEY", "false").lower()
-                == "true",
+                env.get("GAINESVILLE_RTS_API_KEY"),
             )
             else "0"
         ),
@@ -156,6 +155,20 @@ def main():
                 raise RuntimeError("The private API did not become ready.")
             try:
                 with urlopen(
+                    "http://127.0.0.1:3001/api/provider-status", timeout=15
+                ) as response:
+                    provider = json.load(response)
+                print(
+                    f"Gainesville BusTime credential verified: {provider.get('ok') is True}.",
+                    flush=True,
+                )
+            except (URLError, OSError, ValueError):
+                print(
+                    "Gainesville BusTime credential check unavailable; verify GAINESVILLE_RTS_API_KEY in Render.",
+                    flush=True,
+                )
+            try:
+                with urlopen(
                     "http://127.0.0.1:3001/api/vehicles", timeout=15
                 ) as response:
                     matches = json.load(response).get("vehicles", [])
@@ -170,8 +183,8 @@ def main():
                 )
             try:
                 probe = {
-                    "origin": {"lat": 43.128105, "lon": -77.6636},
-                    "destination": {"lat": 43.148116, "lon": -77.578088},
+                    "origin": {"lat": 29.64514, "lon": -82.346983},
+                    "destination": {"lat": 29.645567, "lon": -82.322697},
                     "mode": "depart_at",
                     "when": int(time.time() * 1000) + 3 * 3600_000,
                     "maxWalk": 10,
@@ -196,10 +209,12 @@ def main():
                 )
         else:
             print(
-                "Live arrivals disabled: configure a replacement RTS_API_KEY in the hosting secret settings.",
+                "Live arrivals disabled: configure GAINESVILLE_RTS_API_KEY in the hosting secret settings.",
                 flush=True,
             )
         # Do not pass the RTS key to the public UI child process.
+        api_env.pop("GAINESVILLE_RTS_API_KEY", None)
+        os.environ.pop("GAINESVILLE_RTS_API_KEY", None)
         api_env.pop("RTS_API_KEY", None)
         os.environ.pop("RTS_API_KEY", None)
         ui = subprocess.Popen(

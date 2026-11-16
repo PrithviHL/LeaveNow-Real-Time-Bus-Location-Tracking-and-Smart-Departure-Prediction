@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { point, agencyTime } from "./planner.js";
+import { inServiceArea } from "./gainesville.js";
 import { planJourney, routingOptions } from "./journeys.js";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const types = {
@@ -45,11 +46,12 @@ export function handler(
           ok: true,
           configured: Boolean(client.key),
           timetable: schedule?.metadata() || null,
-          service: "RTS Rochester",
+          service: "Gainesville RTS",
           timeZone: "America/New_York",
         });
       if (req.method === "GET" && url.pathname === "/api/stops") {
         const stops = (schedule ? schedule.stops : await client.stops())
+          .filter(inServiceArea)
           .map(({ id, name, lat, lon }) => ({ id, name, lat, lon }))
           .sort(
             (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
@@ -64,6 +66,7 @@ export function handler(
           });
         const terms = q.split(/\s+/);
         const stops = (schedule ? schedule.stops : await client.stops())
+          .filter(inServiceArea)
           .filter(
             (s) =>
               terms.every((t) => s.name.toLowerCase().includes(t)) ||
@@ -71,6 +74,14 @@ export function handler(
           )
           .sort((a, b) => a.name.localeCompare(b.name));
         return json(200, { results: stops.slice(0, 12), count: stops.length });
+      }
+      if (req.method === "GET" && url.pathname === "/api/provider-status") {
+        const data = await client.request("gettime", {}, 30_000);
+        return json(200, {
+          ok: true,
+          provider: "Gainesville RTS BusTime v3",
+          serverTime: data.tm || null,
+        });
       }
       if (req.method === "GET" && url.pathname === "/api/vehicles") {
         const now = Date.now();
@@ -95,6 +106,13 @@ export function handler(
           parsed = JSON.parse(body);
           point(parsed.origin);
           point(parsed.destination);
+          if (
+            !inServiceArea(parsed.origin) ||
+            !inServiceArea(parsed.destination)
+          )
+            throw new Error(
+              "Choose starting and destination locations in the Gainesville, Florida RTS service area.",
+            );
           routingOptions(parsed);
           if (
             parsed.maxWalk !== undefined &&

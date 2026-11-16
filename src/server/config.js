@@ -1,8 +1,8 @@
 export function readConfig(env) {
-  const apiKey = env.RTS_API_KEY?.trim();
-  if (!apiKey || apiKey === "your-rts-api-key")
+  const apiKey = env.GAINESVILLE_RTS_API_KEY?.trim();
+  if (!apiKey || apiKey === "your-gainesville-rts-api-key")
     throw new Error(
-      "Set RTS_API_KEY in the root .env file before starting LeaveNow.",
+      "Set GAINESVILLE_RTS_API_KEY in .env.gainesville or the hosting environment before starting LeaveNow.",
     );
   const port = Number(env.PORT || 3001);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
@@ -21,5 +21,11 @@ export function readConfig(env) {
   const allowedHosts = [
     ...new Set(["localhost", "127.0.0.1", "[::1]", ...extraHosts]),
   ];
-  return { apiKey, port, bindHost, allowedHosts };
+  return {
+    apiKey,
+    port,
+    bindHost,
+    allowedHosts,
+    feed: env.GAINESVILLE_RTS_FEED || "",
+  };
 }

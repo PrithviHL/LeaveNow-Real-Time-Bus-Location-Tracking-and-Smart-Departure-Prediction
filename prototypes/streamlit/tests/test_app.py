@@ -15,13 +15,18 @@ def trip_fixture():
     now = int(time.time() * 1000)
     boarding = {
         "id": "1007",
-        "name": "East & Alexander",
-        "lat": 43.155,
-        "lon": -77.594,
+        "name": "Reitz Union",
+        "lat": 29.64514,
+        "lon": -82.346983,
         "meters": 50,
         "walkMinutes": 1,
     }
-    alighting = {"id": "2940", "name": "Park & Berkeley", "lat": 43.148, "lon": -77.578}
+    alighting = {
+        "id": "2940",
+        "name": "Rosa Parks RTS Downtown Station",
+        "lat": 29.645567,
+        "lon": -82.322697,
+    }
     return {
         "checkedAt": now,
         "partial": False,
@@ -37,7 +42,7 @@ def trip_fixture():
                 "destinationAt": now + 1560000,
                 "walkMinutes": 1,
                 "finalWalkMinutes": 1,
-                "headsign": "10 Park",
+                "headsign": "17 Downtown",
                 "direction": "Outbound",
             }
         ],
@@ -54,8 +59,13 @@ def ready_app():
 class AppTests(unittest.TestCase):
     def setUp(self):
         CATALOG = [
-            {"id": "1007", "name": "East & Alexander", "lat": 43.155, "lon": -77.594},
-            {"id": "2940", "name": "Park & Berkeley", "lat": 43.148, "lon": -77.578},
+            {"id": "1007", "name": "Reitz Union", "lat": 29.64514, "lon": -82.346983},
+            {
+                "id": "2940",
+                "name": "Rosa Parks RTS Downtown Station",
+                "lat": 29.645567,
+                "lon": -82.322697,
+            },
         ]
         stops = patch("client.stop_catalog", return_value=CATALOG)
         stops.start()
@@ -70,13 +80,13 @@ class AppTests(unittest.TestCase):
         app = AppTest.from_file(str(APP), default_timeout=20).run()
         origin = next(s for s in app.selectbox if s.key == "origin_stop")
         self.assertIsNone(origin.value)
-        self.assertTrue(any("East & Alexander" in label for label in origin.options))
+        self.assertTrue(any("Reitz Union" in label for label in origin.options))
         origin.set_value("1007")
         next(s for s in app.selectbox if s.key == "destination_stop").set_value("2940")
         app.run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.155)
-        self.assertEqual(app.session_state["resolved_destination"]["lat"], 43.148)
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.64514)
+        self.assertEqual(app.session_state["resolved_destination"]["lat"], 29.645567)
         self.assertFalse(
             next(b for b in app.button if b.label == "Find my next bus").disabled
         )
@@ -108,17 +118,17 @@ class AppTests(unittest.TestCase):
 
     def test_presets_and_swap_update_locations(self):
         app = AppTest.from_file(str(APP), default_timeout=20).run()
-        next(b for b in app.button if b.label == "↗ East → Park").click().run()
+        next(b for b in app.button if b.label == "↗ Reitz → Downtown").click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.155028)
-        self.assertEqual(app.session_state["resolved_destination"]["lat"], 43.148116)
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.64514)
+        self.assertEqual(app.session_state["resolved_destination"]["lat"], 29.645567)
         next(b for b in app.button if b.label == "⇄ Swap locations").click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.148116)
-        self.assertEqual(app.session_state["resolved_destination"]["lat"], 43.155028)
-        next(b for b in app.button if b.label == "↙ Park → East").click().run()
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.645567)
+        self.assertEqual(app.session_state["resolved_destination"]["lat"], 29.64514)
+        next(b for b in app.button if b.label == "↙ Downtown → Reitz").click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["resolved_origin"]["lat"], 43.148116)
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.645567)
 
     def test_successful_trip_renders_metrics(self):
         with patch("client.api_request", return_value=trip_fixture()):
@@ -126,7 +136,7 @@ class AppTests(unittest.TestCase):
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             self.assertFalse(app.exception)
             self.assertEqual(len(app.metric), 4)
-            self.assertTrue(any(s.value == "10 Park" for s in app.subheader))
+            self.assertTrue(any(s.value == "17 Downtown" for s in app.subheader))
 
     def test_travel_modes_and_transfer_controls_are_forwarded(self):
         with patch("client.api_request", return_value=trip_fixture()) as request:
@@ -145,7 +155,7 @@ class AppTests(unittest.TestCase):
     def test_transfer_timeline_and_scheduled_labels(self):
         plan = trip_fixture()
         j = plan["journeys"][0]
-        transfer = {"id": "hub", "name": "Transit Center", "lat": 43.16, "lon": -77.61}
+        transfer = {"id": "hub", "name": "Transit Center", "lat": 29.64, "lon": -82.34}
         j.update(
             route="23 → 10",
             headsign="Route 23 → Route 10",
