@@ -75,7 +75,11 @@ export class BusTimeClient {
       if (!data || typeof data !== "object" || Array.isArray(data))
         throw new Error("Gainesville RTS returned an unexpected response.");
       if (data.error?.length) {
-        const errors = data.error.map((e) => String(e.msg || ""));
+        const errors = data.error.map((e) =>
+          String(e.msg || "")
+            .replace(/\s+/g, " ")
+            .trim(),
+        );
         if (
           errors.every((e) =>
             /^(No data found for parameter\(s\)|No arrival times|No service scheduled)(?:[.:].*)?$/i.test(
@@ -88,7 +92,7 @@ export class BusTimeClient {
           throw new Error(
             errors.some((e) => /key|access/i.test(e))
               ? "Gainesville RTS rejected GAINESVILLE_RTS_API_KEY. Check the hosting secret."
-              : `Gainesville RTS ${endpoint} failed (${errors.some((e) => /feed/i.test(e)) ? "feed configuration" : errors.some((e) => /limit|quota/i.test(e)) ? "provider quota" : "provider response"}).`,
+              : `Gainesville RTS ${endpoint} failed (${errors.some((e) => /feed/i.test(e)) ? "feed configuration" : errors.some((e) => /limit|quota/i.test(e)) ? "provider quota" : ["No data found", "Maximum number", "Invalid parameter", "Either rt or vid", "No parameter", "Internal server", "Unsupported function", "No service"].find((label) => errors.some((e) => e.toLowerCase().includes(label.toLowerCase()))) || "provider response"}).`,
           );
       }
       if (this.cache.size > 1000) this.cache.clear();
@@ -105,7 +109,9 @@ export class BusTimeClient {
   async feedName() {
     if (this.feed) return this.feed;
     const result = await this.request("getrtpidatafeeds", {}, 3600_000);
-    const feeds = (result.rtpidatafeed || []).filter((f) => f.enabled !== false && f.enabled !== "false");
+    const feeds = (result.rtpidatafeed || []).filter(
+      (f) => f.enabled !== false && f.enabled !== "false",
+    );
     // Single-feed systems omit rtpidatafeed entirely (guide section 1.7).
     if (!feeds.length) return "";
     if (feeds.length === 1 && feeds[0].name) this.feed = String(feeds[0].name);
