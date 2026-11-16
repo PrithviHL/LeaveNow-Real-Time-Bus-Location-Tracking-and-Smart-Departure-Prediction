@@ -28,6 +28,8 @@ Use a future weekday during service hours to test **Depart at** and **Arrive by*
 
 ## Features and scope
 
+The compact interface includes a decorative CSS 3D bus scene, subtle card depth, and responsive styling. Motion respects the browser’s reduced-motion preference. The animation is independent of live bus data.
+
 - Google sign-in, account menu, logout, and a sign-in gate before the planner.
 - Searchable stop suggestions in both location fields, current-location permission flow, coordinates, and sample-trip presets.
 - Official RTS GTFS calendars, stop/trip order, and direct or **one-transfer** timetable routing.

@@ -43,7 +43,11 @@ else:
     markup(
         '<div class="ln-nav"><div class="ln-brand"><i>↗</i>Leave<span>Now</span></div><div class="ln-city">GAINESVILLE, FL</div><div class="ln-live"><span class="ln-dot"></span>GAINESVILLE RTS</div></div>'
     )
-markup('<div class="ln-hero"><h1>Where to?</h1></div>')
+markup(
+    '<div class="ln-hero ln-hero-depth"><div class="ln-hero-copy"><span class="ln-hero-tag">YOUR NEXT MOVE</span><h1>Where to<span>?</span></h1></div>'
+    '<div class="ln-scene" aria-hidden="true"><div class="ln-road-grid"></div><div class="ln-route-glow"></div><div class="ln-orbit ln-orbit-a"></div><div class="ln-orbit ln-orbit-b"></div>'
+    '<div class="ln-bus-shadow"></div><div class="ln-bus-float"><div class="ln-bus-3d"><div class="ln-bus-top"></div><div class="ln-bus-end"><i></i></div><div class="ln-bus-side"><span class="ln-bus-logo">↗</span><div class="ln-bus-windows"><i></i><i></i><i></i></div><b class="ln-wheel ln-wheel-a"></b><b class="ln-wheel ln-wheel-b"></b></div></div></div></div></div>'
+)
 
 account_controls()
 
