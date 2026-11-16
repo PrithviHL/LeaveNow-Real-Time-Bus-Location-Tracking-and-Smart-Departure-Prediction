@@ -11,7 +11,7 @@ import sys
 import time
 import tempfile
 from urllib.parse import urlparse
-from urllib.error import URLError
+from urllib.error import URLError, HTTPError
 from urllib.request import urlopen, Request
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -176,6 +176,13 @@ def main():
                     f"RTS connection verified: live vehicle lookup returned {len(matches)} fresh positions.",
                     flush=True,
                 )
+            except HTTPError as exc:
+                # API errors contain only fixed, sanitized messages from our adapter.
+                try:
+                    message = json.load(exc).get("error", "Live lookup unavailable")
+                except (ValueError, OSError):
+                    message = "Live lookup unavailable"
+                print(f"RTS startup check: {message}", flush=True)
             except (URLError, OSError, ValueError):
                 print(
                     "RTS startup check unavailable; visitors can retry stop search later.",

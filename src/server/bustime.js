@@ -78,7 +78,7 @@ export class BusTimeClient {
         const errors = data.error.map((e) => String(e.msg || ""));
         if (
           errors.every((e) =>
-            /^(No data found for parameter\(s\)|No arrival times|No service scheduled)\.?$/i.test(
+            /^(No data found for parameter\(s\)|No arrival times|No service scheduled)(?:[.:].*)?$/i.test(
               e,
             ),
           )
@@ -88,7 +88,7 @@ export class BusTimeClient {
           throw new Error(
             errors.some((e) => /key|access/i.test(e))
               ? "Gainesville RTS rejected GAINESVILLE_RTS_API_KEY. Check the hosting secret."
-              : "Gainesville RTS could not complete this request. Check feed configuration or retry later.",
+              : `Gainesville RTS ${endpoint} failed (${errors.some((e) => /feed/i.test(e)) ? "feed configuration" : errors.some((e) => /limit|quota/i.test(e)) ? "provider quota" : "provider response"}).`,
           );
       }
       if (this.cache.size > 1000) this.cache.clear();
@@ -105,7 +105,7 @@ export class BusTimeClient {
   async feedName() {
     if (this.feed) return this.feed;
     const result = await this.request("getrtpidatafeeds", {}, 3600_000);
-    const feeds = result.rtpidatafeed || [];
+    const feeds = (result.rtpidatafeed || []).filter((f) => f.enabled !== false && f.enabled !== "false");
     // Single-feed systems omit rtpidatafeed entirely (guide section 1.7).
     if (!feeds.length) return "";
     if (feeds.length === 1 && feeds[0].name) this.feed = String(feeds[0].name);
