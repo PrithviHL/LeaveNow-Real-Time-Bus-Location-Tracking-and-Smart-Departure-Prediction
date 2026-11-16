@@ -411,14 +411,20 @@ def show_bus_tracking(trip, journey, leg, light):
     try:
         data = api_request(
             "/api/tracking?"
-            + urlencode({"stop": leg["boarding"]["id"], "route": leg["route"]})
+            + urlencode(
+                {
+                    "stop": leg["boarding"]["id"],
+                    "alight": leg["alighting"]["id"],
+                    "route": leg["route"],
+                }
+            )
         )
         buses = {b["id"]: b for b in data.get("buses", [])}
         key = "tracked_bus_" + str(leg["boarding"]["id"]) + "_" + str(leg["route"])
         if st.session_state.get(key) not in buses:
             st.session_state.pop(key, None)
         selected = st.selectbox(
-            "Choose a live bus on this route",
+            "Choose a bus toward your destination",
             list(buses),
             index=None,
             format_func=lambda id: f"Bus {id} · {buses[id]['destination']} · "
@@ -442,13 +448,13 @@ def show_bus_tracking(trip, journey, leg, light):
                     clock_time(bus["arrivalAt"]),
                 )
             else:
-                st.info(
-                    "Live GPS is available; stop ETA is not. Check the destination sign before boarding."
-                )
+                st.info("Direction verified · Live GPS · Stop ETA unavailable.")
             if not bus.get("position"):
                 st.info("ETA available. Waiting for fresh GPS.")
         elif not buses:
-            st.info("No live bus reported. The timetable is still available.")
+            st.info(
+                "No live bus verified in this direction. Scheduled trips remain available."
+            )
         if data.get("partial"):
             st.warning("Some live tracking data is temporarily unavailable.")
     except ApiError as error:

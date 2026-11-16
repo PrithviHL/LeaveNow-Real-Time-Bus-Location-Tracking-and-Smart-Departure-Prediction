@@ -1,115 +1,147 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { trackBoarding } from "../src/server/tracking.js";
+import { trackBoarding, patternServesJourney } from "../src/server/tracking.js";
 const now = Date.parse("2026-11-16T18:00:00Z");
 const stop = { id: "473", name: "Reitz Union", lat: 29.64514, lon: -82.346983 };
-const prediction = (id, route = "17") => ({
-  VehicleId: id,
-  RouteId: route,
-  ETA: now + 300000,
-  Timestamp: now,
-  Destination: "Downtown",
-});
-const position = (id, route = "17", timestamp = now) => ({
+const end = { id: "1", name: "Downtown", lat: 29.645567, lon: -82.322697 };
+const patterns = [
+  {
+    id: "out",
+    stops: [
+      { id: "473", distance: 100 },
+      { id: "1", distance: 500 },
+    ],
+  },
+  {
+    id: "in",
+    stops: [
+      { id: "1", distance: 100 },
+      { id: "473", distance: 500 },
+    ],
+  },
+];
+const vehicle = (id, patternId = "out", patternDistance = 50) => ({
   id,
-  route,
+  route: "17",
   lat: 29.64,
   lon: -82.34,
-  positionTimestamp: timestamp,
+  positionTimestamp: now,
+  patternId,
+  patternDistance,
 });
-test("tracking joins exact vehicle and route, excludes stale predictions and wrong route buses", async () => {
-  const result = await trackBoarding(
+const pred = (id, trip = "trip", eta = now + 300000) => ({
+  VehicleId: id,
+  RouteId: "17",
+  TripId: trip,
+  Timestamp: now,
+  ETA: eta,
+});
+const client = (vehicles, arrivals = [], alight = []) => ({
+  vehicles: async () => vehicles,
+  patterns: async () => patterns,
+  predictions: async (id) => (id === "473" ? arrivals : alight),
+});
+test("same-route opposite-direction, passed-stop and unverified GPS vehicles are excluded", async () => {
+  const c = client([
+    vehicle("out"),
+    vehicle("in", "in"),
+    vehicle("passed", "out", 200),
+    { ...vehicle("unknown"), patternId: "" },
+  ]);
+  const r = await trackBoarding(c, stop, "17", now, end);
+  assert.deepEqual(
+    r.buses.map((b) => b.id),
+    ["out"],
+  );
+  assert.equal(r.buses[0].arrivalAt, null);
+  assert.equal(r.buses[0].directionVerified, true);
+});
+test("boarding and alighting predictions must belong to the same vehicle and live trip in time order", async () => {
+  const c = client(
+    [],
+    [pred("yes"), pred("reverse"), pred("otherTrip"), pred("stale")],
+    [
+      pred("yes", "trip", now + 600000),
+      pred("reverse", "trip", now + 100000),
+      pred("otherTrip", "different", now + 600000),
+      { ...pred("stale", "trip", now + 600000), Timestamp: now - 600000 },
+    ],
+  );
+  const r = await trackBoarding(c, stop, "17", now, end);
+  assert.deepEqual(
+    r.buses.map((b) => b.id),
+    ["yes"],
+  );
+  assert.equal(r.buses[0].position, null);
+});
+test("verified pattern adds GPS to a boarding prediction; stale positions are hidden", async () => {
+  const c = client([vehicle("1")], [pred("1")]);
+  let r = await trackBoarding(c, stop, "17", now, end);
+  assert.ok(r.buses[0].position);
+  assert.equal(r.buses[0].arrivalAt, now + 300000);
+  c.vehicles = async () => [
+    { ...vehicle("1"), positionTimestamp: now - 600000 },
+  ];
+  c.predictions = async (id) => [
+    pred("1", "trip", id === "473" ? now + 300000 : now + 600000),
+  ];
+  r = await trackBoarding(c, stop, "17", now, end);
+  assert.equal(r.buses[0].position, null);
+});
+test("unknown direction and provider failures do not fall back to route-only buses", async () => {
+  const c = client([vehicle("1")]);
+  c.patterns = async () => {
+    throw Error("unavailable");
+  };
+  const r = await trackBoarding(c, stop, "17", now, end);
+  assert.deepEqual(r.buses, []);
+  assert.equal(r.partial, true);
+  assert.deepEqual((await trackBoarding(c, stop, "17", now)).buses, []);
+});
+test("loop patterns use the upcoming occurrence of a boarding stop", () => {
+  const loop = [
     {
-      predictions: async () => [
-        prediction("1"),
-        prediction("2"),
-        prediction("3", "20"),
-        { ...prediction("4"), Timestamp: now - 600000 },
-      ],
-      vehicles: async () => [
-        position("1"),
-        position("2", "20"),
-        position("3", "20"),
+      id: "loop",
+      stops: [
+        { id: "473", distance: 100 },
+        { id: "1", distance: 200 },
+        { id: "473", distance: 600 },
+        { id: "1", distance: 900 },
       ],
     },
-    stop,
-    "17",
-    now,
-  );
-  assert.deepEqual(
-    result.buses.map((b) => b.id),
-    ["1", "2"],
-  );
-  assert.ok(result.buses[0].position);
-  assert.equal(result.buses[1].position, null);
-  assert.equal(result.buses[0].arrivalAt, now + 300000);
-});
-test("stale GPS is hidden and provider failure retains arrival without a fabricated marker", async () => {
-  const client = {
-    predictions: async () => [prediction("1")],
-    vehicles: async () => [position("1", "17", now - 600000)],
-  };
+  ];
   assert.equal(
-    (await trackBoarding(client, stop, "17", now)).buses[0].position,
-    null,
+    patternServesJourney(vehicle("1", "loop", 300), loop, stop, end),
+    true,
   );
-  client.vehicles = async () => {
-    throw Error("unavailable");
-  };
-  const result = await trackBoarding(client, stop, "17", now);
-  assert.equal(result.partial, true);
-  assert.equal(result.buses[0].position, null);
-  client.predictions = async () => {
-    throw Error("unavailable");
-  };
-  assert.deepEqual((await trackBoarding(client, stop, "17", now)).buses, []);
+  assert.equal(
+    patternServesJourney(vehicle("1", "loop", 700), loop, stop, end),
+    false,
+  );
 });
-
-test("tracking endpoint validates stop and route and returns only public tracking fields", async () => {
+test("tracking endpoint requires destination context", async () => {
   const { default: http } = await import("node:http");
   const { handler } = await import("../src/server/app.js");
-  const client = {
-    predictions: async () => [prediction("1")],
-    vehicles: async () => [position("1")],
+  const schedule = {
+    stops: [stop, end],
+    data: { routes: { r: { short: "17" } } },
   };
-  const schedule = { stops: [stop], data: { routes: { r: { short: "17" } } } };
-  const server = http.createServer(handler(client, { schedule }));
+  const server = http.createServer(handler(client([]), { schedule }));
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
+    for (const query of [
+      "stop=473&route=17",
+      "stop=473&alight=bad&route=17",
+      "stop=473&alight=1&route=bad",
+    ])
+      assert.equal((await fetch(base + "/api/tracking?" + query)).status, 400);
     assert.equal(
-      (await fetch(base + "/api/tracking?stop=bad&route=17")).status,
-      400,
+      (await fetch(base + "/api/tracking?stop=473&alight=1&route=17")).status,
+      200,
     );
-    assert.equal(
-      (await fetch(base + "/api/tracking?stop=473&route=bad")).status,
-      400,
-    );
-    const response = await fetch(base + "/api/tracking?stop=473&route=17");
-    assert.equal(response.status, 200);
-    assert.equal((await response.json()).route, "17");
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
   }
-});
-
-test("route GPS is selectable without a stop prediction, with no invented ETA", async () => {
-  const result = await trackBoarding(
-    {
-      predictions: async () => [],
-      vehicles: async () => [
-        position("1"),
-        position("2", "20"),
-        position("3", "17", now - 600000),
-      ],
-    },
-    stop,
-    "17",
-    now,
-  );
-  assert.equal(result.buses.length, 1);
-  assert.equal(result.buses[0].id, "1");
-  assert.equal(result.buses[0].arrivalAt, null);
-  assert.ok(result.buses[0].position);
 });

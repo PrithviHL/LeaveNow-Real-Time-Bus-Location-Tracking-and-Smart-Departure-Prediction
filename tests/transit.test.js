@@ -55,7 +55,8 @@ test("credential and API envelope errors are safe; no-service is a valid empty r
   );
   const empty = new BusTimeClient("test", {
     feed: "bustime",
-    fetcher: async () => envelope({ error: [{ msg: "No data found for parameters: rt" }] }),
+    fetcher: async () =>
+      envelope({ error: [{ msg: "No data found for parameters: rt" }] }),
   });
   assert.deepEqual(await empty.predictions("1"), []);
   await assert.rejects(
@@ -161,4 +162,35 @@ test("single-feed deployments omit the optional feed parameter", async () => {
   });
   assert.deepEqual(await client.vehicles(), []);
   assert.equal(urls.at(-1).searchParams.has("rtpidatafeed"), false);
+});
+
+test("live patterns retain ordered stop distances for direction verification", async () => {
+  const c = new BusTimeClient("test", {
+    feed: "bustime",
+    fetcher: async (url) => {
+      assert.ok(url.pathname.endsWith("getpatterns"));
+      assert.equal(url.searchParams.get("rt"), "1");
+      return Response.json({
+        "bustime-response": {
+          ptr: [
+            {
+              pid: 12,
+              pt: [
+                { typ: "S", stpid: 1, seq: 3, pdist: 500 },
+                { typ: "W", seq: 2 },
+                { typ: "S", stpid: 44, seq: 1, pdist: 100 },
+              ],
+            },
+          ],
+        },
+      });
+    },
+  });
+  const [p] = await c.patterns("1");
+  assert.equal(p.id, "12");
+  assert.deepEqual(
+    p.stops.map((s) => s.id),
+    ["44", "1"],
+  );
+  assert.equal(p.stops[0].distance, 100);
 });

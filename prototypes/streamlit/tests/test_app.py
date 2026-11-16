@@ -208,7 +208,7 @@ class AppTests(unittest.TestCase):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             selector = next(
-                s for s in app.selectbox if s.label == "Choose a live bus on this route"
+                s for s in app.selectbox if s.label == "Choose a bus toward your destination"
             )
             selector.set_value("901").run()
             self.assertFalse(app.exception)
@@ -241,10 +241,10 @@ class AppTests(unittest.TestCase):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             next(
-                s for s in app.selectbox if s.label == "Choose a live bus on this route"
+                s for s in app.selectbox if s.label == "Choose a bus toward your destination"
             ).set_value("902").run()
             self.assertFalse(app.exception)
-            self.assertTrue(any("Live GPS is available" in i.value for i in app.info))
+            self.assertTrue(any("Direction verified" in i.value for i in app.info))
             self.assertFalse(
                 any(m.label == "Bus reaches your boarding stop" for m in app.metric)
             )

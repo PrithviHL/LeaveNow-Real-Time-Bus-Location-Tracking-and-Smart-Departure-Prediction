@@ -18,7 +18,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def safe_api_key(value, allow_existing=False):
-    if not value or not value.strip() or value in ("your-rts-api-key", "your-gainesville-rts-api-key"):
+    if (
+        not value
+        or not value.strip()
+        or value in ("your-rts-api-key", "your-gainesville-rts-api-key")
+    ):
         return False
     if allow_existing:
         return True
@@ -176,10 +180,21 @@ def main():
                     f"RTS connection verified: live vehicle lookup returned {len(matches)} fresh positions.",
                     flush=True,
                 )
-                print("Live fleet sample: " + json.dumps([
-                    {"bus": v["id"], "route": v["route"], "lat": v["lat"], "lon": v["lon"]}
-                    for v in matches[:12]
-                ]), flush=True)
+                print(
+                    "Live fleet sample: "
+                    + json.dumps(
+                        [
+                            {
+                                "bus": v["id"],
+                                "route": v["route"],
+                                "lat": v["lat"],
+                                "lon": v["lon"],
+                            }
+                            for v in matches[:12]
+                        ]
+                    ),
+                    flush=True,
+                )
             except HTTPError as exc:
                 # API errors contain only fixed, sanitized messages from our adapter.
                 try:
@@ -193,9 +208,26 @@ def main():
                     flush=True,
                 )
             try:
-                with urlopen("http://127.0.0.1:3001/api/tracking?stop=44&route=1", timeout=25) as response:
+                with urlopen(
+                    "http://127.0.0.1:3001/api/tracking?stop=44&alight=1&route=1",
+                    timeout=25,
+                ) as response:
                     tracking = json.load(response)
-                print("Live tracking check: " + json.dumps({"stop":"44", "route":"1", "partial":tracking.get("partial"), "buses":[{"bus":b["id"], "arrivalAt":b.get("arrivalAt")} for b in tracking.get("buses",[])]}), flush=True)
+                print(
+                    "Live tracking check: "
+                    + json.dumps(
+                        {
+                            "stop": "44",
+                            "route": "1",
+                            "partial": tracking.get("partial"),
+                            "buses": [
+                                {"bus": b["id"], "arrivalAt": b.get("arrivalAt")}
+                                for b in tracking.get("buses", [])
+                            ],
+                        }
+                    ),
+                    flush=True,
+                )
             except (URLError, OSError, ValueError):
                 print("Live tracking diagnostic unavailable.", flush=True)
             try:

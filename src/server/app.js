@@ -104,9 +104,14 @@ export function handler(
         const stopId = url.searchParams.get("stop") || "";
         const route = url.searchParams.get("route") || "";
         const stop = schedule?.stops.find((s) => s.id === stopId);
+        const alightId = url.searchParams.get("alight") || "";
+        const alighting = schedule?.stops.find((s) => s.id === alightId);
         if (
           !stop ||
+          !alighting ||
+          stopId === alightId ||
           !inServiceArea(stop) ||
+          !inServiceArea(alighting) ||
           !route ||
           route.length > 30 ||
           !Object.values(schedule.data.routes).some(
@@ -114,9 +119,13 @@ export function handler(
           )
         )
           return json(400, {
-            error: "Choose a valid Gainesville boarding stop and route.",
+            error:
+              "Choose valid Gainesville boarding and get-off stops and a route.",
           });
-        return json(200, await trackBoarding(client, stop, route));
+        return json(
+          200,
+          await trackBoarding(client, stop, route, Date.now(), alighting),
+        );
       }
       if (req.method === "GET" && url.pathname === "/api/vehicles") {
         const now = Date.now();

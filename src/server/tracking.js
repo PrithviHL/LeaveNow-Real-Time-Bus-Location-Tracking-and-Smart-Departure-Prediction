@@ -1,77 +1,117 @@
 import { agencyTime, fresh } from "./planner.js";
 import { inServiceArea } from "./gainesville.js";
 
-export async function trackBoarding(client, stop, route, now = Date.now()) {
-  const [predictions, positions] = await Promise.allSettled([
+export function patternServesJourney(vehicle, patterns, boarding, alighting) {
+  if (!Number.isFinite(vehicle.patternDistance) || vehicle.patternDistance < 0)
+    return false;
+  const pattern = patterns.find((p) => p.id === vehicle.patternId);
+  if (!pattern) return false;
+  const stops = pattern.stops;
+  return stops.some(
+    (a, i) =>
+      a.id === String(boarding.code || boarding.id) &&
+      Number.isFinite(a.distance) &&
+      vehicle.patternDistance <= a.distance &&
+      stops
+        .slice(i + 1)
+        .some(
+          (b) =>
+            b.id === String(alighting.code || alighting.id) &&
+            Number.isFinite(b.distance) &&
+            b.distance > a.distance,
+        ),
+  );
+}
+
+export async function trackBoarding(
+  client,
+  stop,
+  route,
+  now = Date.now(),
+  alighting = null,
+) {
+  if (!alighting)
+    return { stop, route, checkedAt: now, buses: [], partial: false };
+  const results = await Promise.allSettled([
     client.predictions(stop.code || stop.id),
     client.vehicles(),
+    client.predictions(alighting.code || alighting.id),
+    client.patterns(route),
   ]);
-  const vehicles = positions.status === "fulfilled" ? positions.value : [];
-  const arrivals = predictions.status === "fulfilled" ? predictions.value : [];
+  const [arrivals, vehicles, departures, patterns] = results.map((r) =>
+    r.status === "fulfilled" ? r.value : [],
+  );
+  const validPrediction = (p) =>
+    String(p.RouteId) === route &&
+    p.VehicleId &&
+    fresh(p, now) &&
+    Number.isFinite(agencyTime(p.ETA)) &&
+    agencyTime(p.ETA) >= now;
+  const validVehicle = (v) =>
+    String(v.route) === route &&
+    v.id &&
+    inServiceArea(v) &&
+    Number.isFinite(agencyTime(v.positionTimestamp)) &&
+    agencyTime(v.positionTimestamp) >= now - 180000 &&
+    agencyTime(v.positionTimestamp) <= now + 60000;
+  const tripId = (p) => String(p.ExternalTripId || p.TripId || "");
+  const upcoming = vehicles.filter(validVehicle);
   const buses = new Map();
-  for (const p of arrivals) {
-    const arrivalAt = agencyTime(p.ETA);
-    if (
-      String(p.RouteId) !== route ||
-      !p.VehicleId ||
-      !fresh(p, now) ||
-      !Number.isFinite(arrivalAt) ||
-      arrivalAt < now - 30000
-    )
-      continue;
-    const id = String(p.VehicleId);
-    const v = vehicles.find(
-      (v) =>
-        String(v.id) === id &&
-        String(v.route) === route &&
-        inServiceArea(v) &&
-        agencyTime(v.positionTimestamp) >= now - 180000 &&
-        agencyTime(v.positionTimestamp) <= now + 60000,
+  for (const p of arrivals.filter(validPrediction)) {
+    const id = String(p.VehicleId),
+      v = upcoming.find((v) => String(v.id) === id);
+    const through = departures.some(
+      (q) =>
+        validPrediction(q) &&
+        String(q.VehicleId) === id &&
+        tripId(p) &&
+        tripId(q) === tripId(p) &&
+        agencyTime(q.ETA) > agencyTime(p.ETA),
     );
+    if (!through && !(v && patternServesJourney(v, patterns, stop, alighting)))
+      continue;
     const bus = {
       id,
       route,
       destination: p.Destination || p.RouteDir || "",
-      arrivalAt,
+      arrivalAt: agencyTime(p.ETA),
       predictionAt: agencyTime(p.Timestamp),
+      directionVerified: true,
       position: v
         ? { lat: v.lat, lon: v.lon, updatedAt: agencyTime(v.positionTimestamp) }
         : null,
     };
-    if (!buses.has(id) || arrivalAt < buses.get(id).arrivalAt)
+    if (!buses.has(id) || bus.arrivalAt < buses.get(id).arrivalAt)
       buses.set(id, bus);
   }
-  // A live vehicle may not yet have a prediction for the chosen stop.
-  // Offer its GPS separately without implying it is the scheduled trip.
-  for (const v of vehicles) {
-    const updatedAt = agencyTime(v.positionTimestamp);
+  for (const v of upcoming) {
     if (
-      String(v.route) !== route ||
-      !v.id ||
       buses.has(String(v.id)) ||
-      !inServiceArea(v) ||
-      !Number.isFinite(updatedAt) ||
-      updatedAt < now - 180000 ||
-      updatedAt > now + 60000
+      !patternServesJourney(v, patterns, stop, alighting)
     )
       continue;
     buses.set(String(v.id), {
       id: String(v.id),
       route,
-      destination: v.label || "Destination unconfirmed",
+      destination: v.label || alighting.name,
       arrivalAt: null,
       predictionAt: null,
-      position: { lat: v.lat, lon: v.lon, updatedAt },
+      directionVerified: true,
+      position: {
+        lat: v.lat,
+        lon: v.lon,
+        updatedAt: agencyTime(v.positionTimestamp),
+      },
     });
   }
   return {
     stop,
+    alighting,
     route,
     checkedAt: now,
     buses: [...buses.values()].sort(
       (a, b) => (a.arrivalAt ?? Infinity) - (b.arrivalAt ?? Infinity),
     ),
-    partial:
-      predictions.status === "rejected" || positions.status === "rejected",
+    partial: results.some((r) => r.status === "rejected"),
   };
 }

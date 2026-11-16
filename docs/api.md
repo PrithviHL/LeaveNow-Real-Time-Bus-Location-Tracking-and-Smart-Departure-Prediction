@@ -80,9 +80,9 @@ Errors use `{"error":"message"}`. Status codes include 400 (invalid input), 403 
 
 Returns `{ "results": [{ "id", "name", "lat", "lon" }] }`, sorted by name and stop ID. Uses the loaded GTFS stop catalog, falling back to the RTS stop list when no timetable is loaded. The Streamlit UI caches this public catalog for one hour and filters searchable dropdowns locally as users type; no API request or RTS credential is sent from the browser for each keystroke. Selecting an option resolves coordinates; clearing it removes the resolved location. This covers RTS stops, not arbitrary street-address geocoding.
 
-## GET /api/tracking?stop=473&route=17
+## GET /api/tracking?stop=473&alight=1&route=17
 
-Private, server-to-server tracking for a valid Gainesville boarding stop and route. Returns `buses` with vehicle ID, destination sign, predicted `arrivalAt`, prediction timestamp, and a nullable fresh GPS `position`. Buses with fresh stop predictions or fresh GPS on that route are offered. GPS-only options have null arrivalAt and predictionAt; their direction and service to the selected stop/destination are unconfirmed. GPS is joined by vehicle ID **and** route; positions older than three minutes are hidden. A provider failure sets `partial` and never substitutes another bus or a scheduled time as a live ETA.
+Private tracking requires a valid boarding stop, get-off stop, and route. Bus choices need either fresh boarding/alighting predictions for the same vehicle and live trip, with the alighting time later, or a fresh vehicle whose live BusTime pattern has the boarding stop ahead of its current pattern distance and the get-off stop after it. GPS-only choices keep a null ETA. Route number, destination text, and compass heading alone never establish direction. Missing/failed pattern verification hides unverified buses. Positions older than three minutes remain hidden. Each transfer leg uses its own boarding/get-off pair.
 
 ## GET /api/addresses?q=Marston%20Science%20Library
 

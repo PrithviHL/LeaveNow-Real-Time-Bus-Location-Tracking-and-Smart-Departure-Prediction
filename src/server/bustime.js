@@ -82,7 +82,9 @@ export class BusTimeClient {
         );
         if (
           errors.every((e) =>
-            /^(No data found\b|No arrival times\b|No service scheduled\b)/i.test(e),
+            /^(No data found\b|No arrival times\b|No service scheduled\b)/i.test(
+              e,
+            ),
           )
         )
           data = {};
@@ -142,7 +144,21 @@ export class BusTimeClient {
     );
     if (String(id) === "44" && !this.predictionDiagnosticLogged) {
       this.predictionDiagnosticLogged = true;
-      console.log("RTS prediction diagnostic: " + JSON.stringify({stop:"44",count:(data.prd || []).length,sample:(data.prd || []).slice(0,3).map(p=>({route:p.rt,bus:p.vid,generated:p.tmstmp,arrival:p.prdtm}))}));
+      console.log(
+        "RTS prediction diagnostic: " +
+          JSON.stringify({
+            stop: "44",
+            count: (data.prd || []).length,
+            sample: (data.prd || [])
+              .slice(0, 3)
+              .map((p) => ({
+                route: p.rt,
+                bus: p.vid,
+                generated: p.tmstmp,
+                arrival: p.prdtm,
+              })),
+          }),
+      );
     }
     return (data.prd || [])
       .filter((p) => p && typeof p === "object")
@@ -167,6 +183,30 @@ export class BusTimeClient {
           Number.isFinite(agencyTime(p.ETA)) &&
           Number.isFinite(agencyTime(p.Timestamp)),
       );
+  }
+  async patterns(route) {
+    const rtpidatafeed = await this.feedName();
+    const data = await this.request(
+      "getpatterns",
+      { rt: route, ...(rtpidatafeed ? { rtpidatafeed } : {}) },
+      300_000,
+    );
+    return (data.ptr || [])
+      .filter((p) => p && Array.isArray(p.pt))
+      .map((p) => ({
+        id: String(p.pid),
+        stops: p.pt
+          .filter((s) => s.typ === "S")
+          .map((s) => ({
+            id: String(s.stpid),
+            sequence: Number(s.seq),
+            distance:
+              s.pdist === undefined || s.pdist === null || s.pdist === ""
+                ? null
+                : Number(s.pdist),
+          }))
+          .sort((a, b) => a.sequence - b.sequence),
+      }));
   }
   async vehicles() {
     const rtpidatafeed = await this.feedName();
@@ -198,6 +238,11 @@ export class BusTimeClient {
         id: String(v.vid),
         route: String(v.rt),
         label: String(v.des || ""),
+        patternId: String(v.pid ?? ""),
+        patternDistance:
+          v.pdist === undefined || v.pdist === null || v.pdist === ""
+            ? null
+            : Number(v.pdist),
         lat: Number(v.lat),
         lon: Number(v.lon),
         timestamp: v.tmstmp,
