@@ -1,3 +1,4 @@
+import { recommendJourneys } from "./recommendations.js";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import {
@@ -364,6 +365,7 @@ export class Schedule {
     for (const list of second.values())
       list.sort((a, b) => a.departsAt - b.departsAt);
     const candidates = new Map();
+    const directCandidates = new Map();
     let cutoff = mode === "arrive_by" ? -Infinity : Infinity;
     first.sort((a, b) =>
       mode === "arrive_by"
@@ -384,10 +386,13 @@ export class Schedule {
         destinationAt - leaveAt > 6 * 3600_000
       )
         return;
-      if (mode === "arrive_by" ? leaveAt < cutoff : destinationAt > cutoff)
+      if (
+        legs.length > 1 &&
+        (mode === "arrive_by" ? leaveAt < cutoff : destinationAt > cutoff)
+      )
         return;
       const key = legs.map((l) => l.instance).join("|");
-      const existing = candidates.get(key);
+      const existing = candidates.get(key) || directCandidates.get(key);
       if (
         existing &&
         (mode === "arrive_by"
@@ -428,6 +433,14 @@ export class Schedule {
           ? Math.floor((last.departsAt - first.arrivesAt) / 60000)
           : 0,
       };
+      if (legs.length === 1) {
+        if (
+          !existing ||
+          this.rank([candidate, existing], mode)[0] === candidate
+        )
+          directCandidates.set(key, candidate);
+        return;
+      }
       if (!existing || this.rank([candidate, existing], mode)[0] === candidate)
         candidates.set(key, candidate);
       if (candidates.size > 512) {
@@ -442,12 +455,12 @@ export class Schedule {
       }
     };
     for (const a of first) {
+      const direct = dmap.get(a.to);
+      if (direct) emit([a], a.access, direct);
       const leave =
         a.departsAt - (a.access.walkMinutes + BOARDING_BUFFER) * 60000;
       if (mode === "arrive_by" ? leave < cutoff : a.arrivesAt > cutoff)
         continue;
-      const direct = dmap.get(a.to);
-      if (direct) emit([a], a.access, direct);
       if (!maxTransfers) continue;
       for (const walk of this.neighbors(a.to)) {
         if (walk.seconds > maxWalk * 60) continue;
@@ -471,16 +484,11 @@ export class Schedule {
         }
       }
     }
-    const ranked = this.rank([...candidates.values()], mode);
-    const seen = new Set();
-    base.journeys = ranked
-      .filter((j) => {
-        const key = j.legs.map((l) => l.instance).join("|");
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 24);
+    base.journeys = recommendJourneys(
+      [...directCandidates.values(), ...candidates.values()],
+      mode,
+      24,
+    );
     for (const journey of base.journeys)
       for (const leg of journey.legs) leg.geometry = this.routeGeometry(leg);
     base.departures = base.journeys.slice(0, 6).map((j) => ({

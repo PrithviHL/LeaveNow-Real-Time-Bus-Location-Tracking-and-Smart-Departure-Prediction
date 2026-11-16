@@ -1,3 +1,4 @@
+import { recommendJourneys } from "./recommendations.js";
 import { agencyTime, fresh, planTrip } from "./planner.js";
 
 export function routingOptions(raw, now = Date.now()) {
@@ -112,7 +113,10 @@ export async function overlayLive(result, client, schedule, now) {
     j.totalMinutes = Math.ceil((j.destinationAt - j.leaveAt) / 60000);
     valid.push(j);
   }
-  result.journeys = schedule.rank(valid, result.mode).slice(0, 8);
+  result.journeys = recommendJourneys(valid, result.mode, 3);
+  result.journeys.forEach((journey, index) => {
+    journey.recommendation = index === 0 ? "Recommended" : "Alternative";
+  });
   result.partial = failed > 0;
   result.liveStatus = failed
     ? "Some live predictions are unavailable; timetable times remain labelled Scheduled."

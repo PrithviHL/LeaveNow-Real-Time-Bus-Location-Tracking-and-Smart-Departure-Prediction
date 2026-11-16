@@ -398,6 +398,8 @@ if st.button(
     use_container_width=True,
 ):
     st.session_state["planned_trip"] = payload
+    st.session_state["journey_choice"] = 0
+    st.session_state.pop("trip_result", None)
 
 
 @st.fragment(run_every="20s" if auto_refresh else None)
@@ -526,7 +528,8 @@ def show_results():
     selected = st.selectbox(
         "Journey options",
         range(len(journeys)),
-        format_func=lambda i: f"{journeys[i]['timingLabel'] if 'timingLabel' in journeys[i] else 'Live'} · {journeys[i]['route']} · {clock_time(journeys[i]['departsAt'])} · {journeys[i].get('transfers', 0)} transfer(s)",
+        format_func=lambda i: f"{journeys[i].get('recommendation', 'Recommended' if i == 0 else 'Alternative')} · Route {journeys[i]['route']} · {clock_time(journeys[i]['departsAt'])} · "
+        + ("Direct" if not journeys[i].get("transfers", 0) else "1 transfer"),
         key="journey_choice",
     )
     journey = journeys[selected]

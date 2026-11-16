@@ -75,3 +75,7 @@ Transfer search orders first legs by their best possible score and keeps a conse
 ### Published route shapes
 
 The importer retains `shapes.txt`, trip `shape_id`, and stop-time `shape_dist_traveled`. Returned journey legs include geometry only for the boarding-to-alighting segment, using distance interpolation to handle loops and repeated stops. Missing or invalid geometry produces no bus line rather than a fabricated straight route. Blue/purple bus lines represent the published schedule path, not actual historical GPS travel or temporary detours. Green walking connections remain approximate. The live pink marker stays at the reported GPS position. No Google Maps API or billing is required.
+
+### Best journey recommendations
+
+Results contain up to three distinct first-bus departures. Variants that board the same trip are grouped, and a direct journey suppresses a transfer that arrives no sooner, leaves no later, and saves at most three minutes of walking. Recommendations balance arrival time (latest departure for Arrive by), an eight-minute transfer penalty, and walking minutes. This favors a direct ride over small transfer gains while retaining substantially faster connections. Direct candidates are kept separately during bounded transfer enumeration so transfer variants cannot crowd them out. The recommendations are re-evaluated after live updates. These are practical ranking preferences within the documented search limits, not a claim to evaluate every possible journey.
