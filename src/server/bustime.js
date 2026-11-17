@@ -1,7 +1,7 @@
 import { API_BASE, inServiceArea } from "./gainesville.js";
 import { agencyTime } from "./planner.js";
 
-// Clever Devices BusTime v3, per the supplied developer guide. No Rochester endpoints.
+// Clever Devices BusTime v3, per the supplied developer guide. Gainesville endpoints only.
 export class BusTimeClient {
   constructor(
     key,

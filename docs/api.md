@@ -15,7 +15,7 @@ Returns application readiness and whether an API credential is configured. This 
 }
 ```
 
-## GET /api/places?q=East%20Alexander
+## GET /api/places?q=Reitz%20Union
 
 Searches provider stop names (all query words) or an exact stop ID. Query length: 2–100 characters. Returns up to 12 results and the total number of matches.
 
@@ -23,10 +23,10 @@ Searches provider stop names (all query words) or an exact stop ID. Query length
 {
   "results": [
     {
-      "id": "1007",
+      "id": "473",
       "name": "Reitz Union",
-      "lat": 43.155062,
-      "lon": -77.594633
+      "lat": 29.64514,
+      "lon": -82.346983
     }
   ],
   "count": 1
@@ -43,8 +43,8 @@ Returns `vehicles` and `checkedAt` (Unix milliseconds). Each vehicle has `id`, `
 
 ```json
 {
-  "origin": { "lat": 43.155028, "lon": -77.594012 },
-  "destination": { "lat": 43.148116, "lon": -77.578088 },
+  "origin": { "lat": 29.64514, "lon": -82.346983 },
+  "destination": { "lat": 29.645567, "lon": -82.322697 },
   "maxWalk": 15
 }
 ```

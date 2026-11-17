@@ -19,11 +19,11 @@ The supervisor in `deploy/public_entrypoint.py` validates the public port, start
 
 ## Secret handling
 
-Configure `GAINESVILLE_RTS_API_KEY` only in Render Environment. It is passed exclusively to the loopback Node API and removed from the Streamlit process environment. The old Rochester `RTS_API_KEY` is never used as a fallback or forwarded to Gainesville. `ALLOW_EXISTING_RTS_KEY` does not enable Gainesville credentials.
+Configure `GAINESVILLE_RTS_API_KEY` only in Render Environment. It is passed exclusively to the loopback Node API and removed from the Streamlit process environment. The previous provider’s `RTS_API_KEY` is never used as a fallback or forwarded to Gainesville. `ALLOW_EXISTING_RTS_KEY` does not enable Gainesville credentials.
 
 Do not commit keys or put them in browser code, Docker build arguments, or URLs shared with visitors. Local development uses ignored `.env.gainesville`. Google sign-in still requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, a stable random `AUTH_COOKIE_SECRET`, and `AUTH_REDIRECT_URI`.
 
-The earlier Rochester credential had historical exposure. Removing source copies does not revoke it; historical cache removal and revocation remain separate from this new Gainesville integration.
+The previous provider’s credential had historical exposure. Removing source copies does not revoke it; historical cache removal and revocation remain separate from this new Gainesville integration.
 
 ## Render profile
 

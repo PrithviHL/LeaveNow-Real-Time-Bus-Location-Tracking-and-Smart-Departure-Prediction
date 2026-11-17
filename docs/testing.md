@@ -27,7 +27,7 @@ Useful local smoke request:
 
 ```sh
 curl -H 'Content-Type: application/json' \
-  -d '{"origin":{"lat":43.155028,"lon":-77.594012},"destination":{"lat":43.148116,"lon":-77.578088},"maxWalk":15}' \
+  -d '{"origin":{"lat":29.64514,"lon":-82.346983},"destination":{"lat":29.645567,"lon":-82.322697},"maxWalk":15}' \
   http://localhost:3001/api/plan
 ```
 
@@ -44,4 +44,6 @@ The local preview is exposed at the printed app address. Browser automation was 
 
 ## Known limits
 
-Upstream prediction accuracy is outside this app’s control. Direct matching is bounded to nearby stops and the live window. Walking is estimated rather than street-routed, and map connectors do not depict actual bus paths. There are no transfer, timetable, account, or multi-user hosting guarantees. Archived research-model binaries are not loaded, tested, or endorsed by the current app.
+Provider ETA accuracy is outside the app’s control. The current Gainesville planner supports direct and one-transfer timetable journeys with verified live overlays; walking remains approximate. Blue/purple paths use published GTFS shapes, not recorded GPS history. Google sign-in is required on the hosted app. Archived research-model binaries are not loaded or evaluated by the current app.
+
+See [routing rules](timetable-routing.md) for search bounds and [measured evaluation](../benchmarks/routing/README.md) for benchmark methodology, raw results, and test evidence.

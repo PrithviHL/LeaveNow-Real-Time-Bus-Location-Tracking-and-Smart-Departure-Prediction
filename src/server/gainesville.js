@@ -13,6 +13,6 @@ export function inServiceArea(point) {
 export function validateGainesvilleFeed(schedule) {
   if (!schedule?.stops?.length || !schedule.stops.every(inServiceArea))
     throw new Error(
-      "A valid Gainesville RTS timetable is required. Run npm run gtfs:import; Rochester feeds are not supported.",
+      "A valid Gainesville RTS timetable is required. Run npm run gtfs:import; only Gainesville feeds are supported.",
     );
 }
