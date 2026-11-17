@@ -1,0 +1,75 @@
+✔ configuration fails early for missing credentials and invalid ports (3.063792ms)
+✔ container hosts require explicit configuration (0.187333ms)
+✔ place search uses bounded Gainesville requests, cache, and filters distant results (25.307625ms)
+✔ place provider errors are safe and not returned as fake results (0.155166ms)
+✔ route clipping follows ordered shape distances through a loop and interpolates endpoints (0.950792ms)
+✔ missing or reversed geometry is omitted instead of inventing a straight bus line (0.080833ms)
+✔ GPS has an explicit click and reports success from the browser (1.413041ms)
+✔ GPS reports denial, timeout, unavailable and unsupported distinctly (0.969459ms)
+✔ a precise-location timeout falls back to a bounded approximate request (0.407333ms)
+✔ denied permission does not trigger another location request (0.316458ms)
+✔ agency timestamps use Gainesville timezone in winter, summer and at midnight (0.843167ms)
+✔ valid locations, nearest stop ordering and normalization (0.617708ms)
+✔ matches the same live trip downstream and includes walking and boarding buffer (0.377542ms)
+✔ rejects opposite direction, another trip, missing IDs and another vehicle (0.76475ms)
+✔ rejects stale feeds, impossible arrival times and buses too soon to reach (0.174417ms)
+✔ planner verifies a direct route using nearby stops and does not mutate locations (12.793834ms)
+✔ all upstream prediction failures are errors, not a no-service result (0.181042ms)
+✔ direct journey replaces slower transfer variants using the same first bus (0.949042ms)
+✔ small transfer savings favor staying on the bus; significant savings are retained (0.08ms)
+✔ arrival search favors simple choices while preserving latest-departure tradeoffs (0.055125ms)
+✔ recommendations are capped and distinct departures remain selectable (0.058584ms)
+✔ slower transfers from a different first bus are suppressed when a later-leaving direct bus beats them (0.051208ms)
+✔ finds a two-bus transfer with walk, buffer, final arrival, and scheduled provenance (2.764375ms)
+✔ direct-only, departure threshold, and arrival deadline produce different valid options (0.650958ms)
+✔ rejects prohibited transfers, insufficient buffers, and restricted pickup/dropoff (0.564208ms)
+✔ service calendar exceptions and feed date limits are enforced (0.271916ms)
+✔ honors scoped transfer bans without banning unrelated routes (0.24ms)
+✔ supports GTFS times after 24:00 on the previous service date (0.135084ms)
+✔ validates travel controls and rejects unreasonable dates (0.282958ms)
+✔ live overlay matches exact trips and rechecks missed transfer connections (0.994375ms)
+✔ unavailable or unrelated live data cannot turn schedule into live evidence (0.458542ms)
+✔ HTTP validation, stop search, static files and origin boundaries (26.237083ms)
+✔ container DNS hosts are explicitly allowed without allowing arbitrary hosts (5.225875ms)
+✔ same-route opposite-direction, passed-stop and unverified GPS vehicles are excluded (1.110333ms)
+✔ boarding and alighting predictions must belong to the same vehicle and live trip in time order (0.160792ms)
+✔ verified pattern adds GPS to a boarding prediction; stale positions are hidden (0.141375ms)
+✔ unknown direction and provider failures do not fall back to route-only buses (0.097875ms)
+✔ loop patterns use the upcoming occurrence of a boarding stop (0.052625ms)
+✔ tracking endpoint requires destination context (34.002167ms)
+✔ BusTime HTTPS JSON requests coalesce without exposing credentials (19.649667ms)
+✔ credential and API envelope errors are safe; no-service is a valid empty result (1.356583ms)
+✔ trip identity is not guessed when BusTime IDs differ from GTFS (0.165917ms)
+✔ vehicles are requested in batches of at most ten routes and filtered to Gainesville (0.550667ms)
+✔ rate budgets permit cached reads and reset each minute (0.24475ms)
+✔ BusTime times use milliseconds or validated local agency time; wrong-region feeds rejected (0.34125ms)
+✔ single-feed deployments omit the optional feed parameter (0.123ms)
+✔ live patterns retain ordered stop distances for direction verification (0.1985ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 125.024125
+ℹ start of coverage report
+ℹ --------------------------------------------------------------------------------------------------------------
+ℹ file                 | line % | branch % | funcs % | uncovered lines
+ℹ --------------------------------------------------------------------------------------------------------------
+ℹ src                  |        |          |         | 
+ℹ  server              |        |          |         | 
+ℹ   app.js             |  76.92 |    76.83 |   75.00 | 68-77 96-102 131-139 155 160-163 174-184 210-211 213-219
+ℹ   bustime.js         |  86.56 |    75.29 |   80.65 | 63-64 67-68 73-74 118-128 146-162
+ℹ   config.js          | 100.00 |   100.00 |  100.00 | 
+ℹ   gainesville.js     | 100.00 |   100.00 |  100.00 | 
+ℹ   geocoding.js       | 100.00 |    71.43 |  100.00 | 
+ℹ   journeys.js        |  76.54 |    78.21 |   92.31 | 21-25 126 131-162
+ℹ   planner.js         |  98.45 |    86.07 |   86.96 | 223-224 296 299 302
+ℹ   recommendations.js | 100.00 |    80.00 |  100.00 | 
+ℹ   schedule.js        |  92.88 |    82.66 |   93.02 | 57-58 299-302 305-308 398-404 439 447-455 510-519
+ℹ   tracking.js        | 100.00 |    93.48 |   92.31 | 
+ℹ --------------------------------------------------------------------------------------------------------------
+ℹ all files            |  90.68 |    81.94 |   88.74 | 
+ℹ --------------------------------------------------------------------------------------------------------------
+ℹ end of coverage report

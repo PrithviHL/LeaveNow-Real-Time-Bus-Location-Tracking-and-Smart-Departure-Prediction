@@ -1,0 +1,53 @@
+test_address_search_requires_explicit_search_and_selection (test_app.AppTests.test_address_search_requires_explicit_search_and_selection) ... 2026-11-16 19:45:47.476 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_autocomplete_selection_resolves_both_locations (test_app.AppTests.test_autocomplete_selection_resolves_both_locations) ... 2026-11-16 19:45:47.633 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_empty_and_api_failure_states (test_app.AppTests.test_empty_and_api_failure_states) ... 2026-11-16 19:45:47.693 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-16 19:45:48.281 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_gps_only_bus_can_be_selected_without_inventing_eta (test_app.AppTests.test_gps_only_bus_can_be_selected_without_inventing_eta) ... 2026-11-16 19:45:48.342 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_gps_success_and_denial_are_handled_separately (test_app.AppTests.test_gps_success_and_denial_are_handled_separately) ... 2026-11-16 19:45:48.419 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-16 19:45:48.484 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_initial_screen_and_missing_locations (test_app.AppTests.test_initial_screen_and_missing_locations) ... 2026-11-16 19:45:48.544 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_presets_and_swap_update_locations (test_app.AppTests.test_presets_and_swap_update_locations) ... 2026-11-16 19:45:48.587 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_select_live_bus_shows_boarding_eta_without_replanning (test_app.AppTests.test_select_live_bus_shows_boarding_eta_without_replanning) ... 2026-11-16 19:45:48.658 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_successful_trip_renders_metrics (test_app.AppTests.test_successful_trip_renders_metrics) ... 2026-11-16 19:45:48.734 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_transfer_timeline_and_scheduled_labels (test_app.AppTests.test_transfer_timeline_and_scheduled_labels) ... 2026-11-16 19:45:48.809 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_travel_modes_and_transfer_controls_are_forwarded (test_app.AppTests.test_travel_modes_and_transfer_controls_are_forwarded) ... 2026-11-16 19:45:48.872 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_unconfigured_public_service_disables_live_calls (test_app.AppTests.test_unconfigured_public_service_disables_live_calls) ... 2026-11-16 19:45:48.945 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_configured_login_and_verified_identity_logout (test_authentication.AuthenticationTests.test_configured_login_and_verified_identity_logout) ... 2026-11-16 19:45:48.995 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-16 19:45:49.044 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_missing_and_incomplete_configuration (test_authentication.AuthenticationTests.test_missing_and_incomplete_configuration) ... ok
+test_runtime_secrets_are_private_valid_toml_and_not_passed_to_children (test_authentication.AuthenticationTests.test_runtime_secrets_are_private_valid_toml_and_not_passed_to_children) ... ok
+test_signed_out_users_cannot_access_planner_without_configuration (test_authentication.AuthenticationTests.test_signed_out_users_cannot_access_planner_without_configuration) ... 2026-11-16 19:45:49.096 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_api_error_display (test_client.ClientTests.test_api_error_display) ... ok
+test_coordinate_validation (test_client.ClientTests.test_coordinate_validation) ... ok
+test_gainesville_travel_controls_handle_timezone_and_invalid_dst_time (test_client.ClientTests.test_gainesville_travel_controls_handle_timezone_and_invalid_dst_time) ... ok
+test_payload_and_response (test_client.ClientTests.test_payload_and_response) ... ok
+test_slow_search_has_actionable_timeout_message (test_client.ClientTests.test_slow_search_has_actionable_timeout_message) ... ok
+test_timezone_conversion (test_client.ClientTests.test_timezone_conversion) ... ok
+test_unreachable_api_has_safe_message (test_client.ClientTests.test_unreachable_api_has_safe_message) ... ok
+test_bus_bends_are_preserved_and_walks_are_separate (test_geometry_map.GeometryMapTests.test_bus_bends_are_preserved_and_walks_are_separate) ... ok
+test_missing_shape_does_not_draw_bus_chord (test_geometry_map.GeometryMapTests.test_missing_shape_does_not_draw_bus_chord) ... ok
+test_compiles_quoted_names_exception_only_calendar_and_overnight_times (test_gtfs_import.FeedImportTests.test_compiles_quoted_names_exception_only_calendar_and_overnight_times) ... ok
+test_imports_shape_points_in_sequence_with_trip_and_stop_distances (test_gtfs_import.FeedImportTests.test_imports_shape_points_in_sequence_with_trip_and_stop_distances) ... ok
+test_rejects_missing_and_nonmonotonic_times (test_gtfs_import.FeedImportTests.test_rejects_missing_and_nonmonotonic_times) ... ok
+test_key_is_removed_from_ui_and_api_stays_on_loopback (test_public_entrypoint.PublicEntryTests.test_key_is_removed_from_ui_and_api_stays_on_loopback) ... ok
+test_missing_or_known_exposed_key_disables_live_api (test_public_entrypoint.PublicEntryTests.test_missing_or_known_exposed_key_disables_live_api) ... ok
+test_public_port_cannot_collide_with_private_api (test_public_entrypoint.PublicEntryTests.test_public_port_cannot_collide_with_private_api) ... ok
+
+----------------------------------------------------------------------
+Ran 31 tests in 1.670s
+
+OK

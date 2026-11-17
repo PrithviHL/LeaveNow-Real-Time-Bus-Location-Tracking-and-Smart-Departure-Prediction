@@ -1,0 +1,116 @@
+✔ configuration fails early for missing credentials and invalid ports (2.281584ms)
+✔ container hosts require explicit configuration (0.580667ms)
+✔ place search uses bounded Gainesville requests, cache, and filters distant results (41.52375ms)
+✔ place provider errors are safe and not returned as fake results (0.148083ms)
+✔ route clipping follows ordered shape distances through a loop and interpolates endpoints (0.965ms)
+✔ missing or reversed geometry is omitted instead of inventing a straight bus line (0.078166ms)
+✔ GPS has an explicit click and reports success from the browser (1.608125ms)
+✔ GPS reports denial, timeout, unavailable and unsupported distinctly (1.014166ms)
+✔ a precise-location timeout falls back to a bounded approximate request (0.262875ms)
+✔ denied permission does not trigger another location request (0.243875ms)
+✔ agency timestamps use Gainesville timezone in winter, summer and at midnight (2.277167ms)
+✔ valid locations, nearest stop ordering and normalization (0.917125ms)
+✔ matches the same live trip downstream and includes walking and boarding buffer (0.404583ms)
+✔ rejects opposite direction, another trip, missing IDs and another vehicle (2.043583ms)
+✔ rejects stale feeds, impossible arrival times and buses too soon to reach (0.223833ms)
+✔ planner verifies a direct route using nearby stops and does not mutate locations (12.008041ms)
+✔ all upstream prediction failures are errors, not a no-service result (0.166ms)
+✔ direct journey replaces slower transfer variants using the same first bus (2.032041ms)
+✔ small transfer savings favor staying on the bus; significant savings are retained (0.109ms)
+✔ arrival search favors simple choices while preserving latest-departure tradeoffs (0.063208ms)
+✔ recommendations are capped and distinct departures remain selectable (0.06775ms)
+✔ slower transfers from a different first bus are suppressed when a later-leaving direct bus beats them (0.056792ms)
+✔ finds a two-bus transfer with walk, buffer, final arrival, and scheduled provenance (7.620583ms)
+✔ direct-only, departure threshold, and arrival deadline produce different valid options (0.472292ms)
+✔ rejects prohibited transfers, insufficient buffers, and restricted pickup/dropoff (0.567792ms)
+✔ service calendar exceptions and feed date limits are enforced (0.275791ms)
+✔ honors scoped transfer bans without banning unrelated routes (0.232542ms)
+✔ supports GTFS times after 24:00 on the previous service date (0.149584ms)
+✔ validates travel controls and rejects unreasonable dates (0.258125ms)
+✔ live overlay matches exact trips and rechecks missed transfer connections (0.970542ms)
+✔ unavailable or unrelated live data cannot turn schedule into live evidence (0.649875ms)
+✖ HTTP validation, stop search, static files and origin boundaries (7.745958ms)
+✖ container DNS hosts are explicitly allowed without allowing arbitrary hosts (2.013292ms)
+✔ same-route opposite-direction, passed-stop and unverified GPS vehicles are excluded (1.282125ms)
+✔ boarding and alighting predictions must belong to the same vehicle and live trip in time order (0.182625ms)
+✔ verified pattern adds GPS to a boarding prediction; stale positions are hidden (0.152292ms)
+✔ unknown direction and provider failures do not fall back to route-only buses (0.108458ms)
+✔ loop patterns use the upcoming occurrence of a boarding stop (0.10575ms)
+✖ tracking endpoint requires destination context (21.101666ms)
+✔ BusTime HTTPS JSON requests coalesce without exposing credentials (20.525958ms)
+✔ credential and API envelope errors are safe; no-service is a valid empty result (1.611625ms)
+✔ trip identity is not guessed when BusTime IDs differ from GTFS (0.171792ms)
+✔ vehicles are requested in batches of at most ten routes and filtered to Gainesville (0.544208ms)
+✔ rate budgets permit cached reads and reset each minute (0.235ms)
+✔ BusTime times use milliseconds or validated local agency time; wrong-region feeds rejected (0.479292ms)
+✔ single-feed deployments omit the optional feed parameter (0.18675ms)
+✔ live patterns retain ordered stop distances for direction verification (0.268083ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 44
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148.318292
+ℹ start of coverage report
+ℹ -------------------------------------------------------------------------------------------------------
+ℹ file                 | line % | branch % | funcs % | uncovered lines
+ℹ -------------------------------------------------------------------------------------------------------
+ℹ src                  |        |          |         | 
+ℹ  server              |        |          |         | 
+ℹ   app.js             |  12.22 |   100.00 |   50.00 | 26-219
+ℹ   bustime.js         |  86.56 |    75.29 |   80.65 | 63-64 67-68 73-74 118-128 146-162
+ℹ   config.js          | 100.00 |   100.00 |  100.00 | 
+ℹ   gainesville.js     | 100.00 |   100.00 |  100.00 | 
+ℹ   geocoding.js       | 100.00 |    71.43 |  100.00 | 
+ℹ   journeys.js        |  76.54 |    78.21 |   92.31 | 21-25 126 131-162
+ℹ   planner.js         |  98.45 |    85.95 |   86.96 | 223-224 296 299 302
+ℹ   recommendations.js | 100.00 |    80.00 |  100.00 | 
+ℹ   schedule.js        |  92.88 |    82.66 |   93.02 | 57-58 299-302 305-308 398-404 439 447-455 510-519
+ℹ   tracking.js        | 100.00 |    93.48 |   92.31 | 
+ℹ -------------------------------------------------------------------------------------------------------
+ℹ all files            |  82.61 |    82.70 |   89.36 | 
+ℹ -------------------------------------------------------------------------------------------------------
+ℹ end of coverage report
+
+✖ failing tests:
+
+test at tests/server.test.js:5:1
+✖ HTTP validation, stop search, static files and origin boundaries (7.745958ms)
+  Error: listen EPERM: operation not permitted 127.0.0.1
+      at Server.setupListenHandle [as _listen2] (node:net:2368:21)
+      at listenInCluster (node:net:2499:12)
+      at node:net:2728:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1'
+  }
+
+test at tests/server.test.js:81:1
+✖ container DNS hosts are explicitly allowed without allowing arbitrary hosts (2.013292ms)
+  Error: listen EPERM: operation not permitted 127.0.0.1
+      at Server.setupListenHandle [as _listen2] (node:net:2368:21)
+      at listenInCluster (node:net:2499:12)
+      at node:net:2728:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1'
+  }
+
+test at tests/tracking.test.js:122:1
+✖ tracking endpoint requires destination context (21.101666ms)
+  Error: listen EPERM: operation not permitted 127.0.0.1
+      at Server.setupListenHandle [as _listen2] (node:net:2368:21)
+      at listenInCluster (node:net:2499:12)
+      at node:net:2728:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1'
+  }
