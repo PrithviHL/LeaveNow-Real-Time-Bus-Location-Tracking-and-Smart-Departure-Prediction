@@ -6,6 +6,18 @@
 
 The live Streamlit application runs from **`feature/streamlit-containers`**. The `main` branch retains the earlier direct-bus browser application. Use this branch for the current deployed UI and routing features.
 
+## Measured routing results
+
+Local evaluation on November 16, 2026, using an Apple M4 Pro and Node 24:
+
+| Metric | Result |
+| --- | --- |
+| Timetable scale | **27 routes · 972 stops · 3,321 trip definitions · 89,517 stop-time records** |
+| Searches returning journeys | **16/60 direct-only → 49/60 with one transfer (3.1×)** |
+| Local routing latency | **7.4 ms median · 31.3 ms p95**, second pass over 60 sampled searches |
+
+The availability gain applies to this one-date sample, not citywide coverage or routing accuracy. Latency excludes HTTP, the UI, and live provider calls. Trip definitions are not daily trip counts. [Benchmark, raw measurements, reproduction commands, test evidence, and limitations](benchmarks/routing/README.md).
+
 ## Use the live app
 
 1. Continue with Google. After login, **Your account** is in the top-right header and includes **Sign out**.
