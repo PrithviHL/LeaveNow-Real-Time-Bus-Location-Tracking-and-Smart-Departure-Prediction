@@ -64,9 +64,16 @@ def apply_preset(reverse=False):
     st.session_state["origin_value"] = origin_name
     st.session_state["destination_value"] = destination_name
     st.session_state["origin_point"] = {"lat": origin[0], "lon": origin[1]}
-    st.session_state["destination_point"] = {"lat": destination[0], "lon": destination[1]}
+    st.session_state["destination_point"] = {
+        "lat": destination[0],
+        "lon": destination[1],
+    }
     st.session_state["origin_selected_name"] = origin_name
     st.session_state["destination_selected_name"] = destination_name
+    for key in ("origin", "destination"):
+        st.session_state[key + "_command"] = (
+            st.session_state.get(key + "_command", 0) + 1
+        )
     st.session_state.pop("planned_trip", None)
 
 
@@ -83,7 +90,10 @@ def swap_locations():
     st.session_state["destination_selected_name"] = origin_label
     st.session_state["origin_point"] = b
     st.session_state["destination_point"] = a
-    st.session_state["origin_gps_result"] = None
+    for key in ("origin", "destination"):
+        st.session_state[key + "_command"] = (
+            st.session_state.get(key + "_command", 0) + 1
+        )
     st.session_state.pop("origin_selected_suggestion", None)
     st.session_state.pop("destination_selected_suggestion", None)
     st.session_state.pop("planned_trip", None)
@@ -113,9 +123,9 @@ def cached_stops():
 # Components v2 renders in the app page, avoiding iframe geolocation policy issues.
 gps_component = st.components.v2.component(
     "leavenow_gps",
-    html='<button type="button" aria-label="Use my current location">⌖ Use my current location</button><p role="status" aria-live="polite">Click to request your location.</p>',
+    html='<button type="button" aria-label="Use my current location">⌖ Use my current location</button><p role="status" aria-live="polite"></p>',
     css="button {background:#c5f267;color:#152217;border:0;border-radius:8px;padding:12px 18px;font:600 14px sans-serif;cursor:pointer} p {font:13px sans-serif;color:var(--st-text-color)}",
-    js="""export default function({parentElement,setStateValue}) {
+    js=r"""export default function({parentElement,setStateValue}) {
       const button=parentElement.querySelector('button'), status=parentElement.querySelector('p');
       let active=true;
       button.onclick=()=>{
@@ -127,7 +137,7 @@ gps_component = st.components.v2.component(
         const success=position=>{
           if(!active)return;
           status.textContent='Location received.';button.disabled=false;
-          setStateValue('location',{latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy:position.coords.accuracy});
+          setStateValue('location',{latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy:position.coords.accuracy,requestId:Date.now()});
         };
         const failure=(error,mayRetry)=>{
           if(!active)return;
@@ -148,71 +158,178 @@ gps_component = st.components.v2.component(
 )
 
 
-def select_suggestion(key):
-    selected = st.session_state.get(key + "_suggestion")
-    item = st.session_state.get(key + "_suggestions", {}).get(selected)
-    if item:
-        st.session_state[key + "_value"] = item["name"]
-        st.session_state[key + "_point"] = {
-            "lat": float(item["lat"]),
-            "lon": float(item["lon"]),
+location_picker_component = st.components.v2.component(
+    "leavenow_location_picker",
+    html='<div class="picker"><input type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" maxlength="150" placeholder="Stop, address, or place"><div class="suggestions" role="listbox"></div></div>',
+    css=""".picker{font:14px sans-serif;color:#e8eef4}
+.picker input{box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #64748066;border-radius:10px;background:#0f1d2b;color:#f5f7fa;font:inherit;outline:none}.picker input:focus{border-color:#c5f267;box-shadow:0 0 0 2px #c5f26733}.suggestions:not(:empty){margin-top:4px;max-height:240px;overflow-y:auto;border:1px solid #64748066;border-radius:10px;background:#14232d;box-shadow:0 10px 24px #0005}.suggestion{display:block;width:100%;padding:11px 13px;border:0;border-bottom:1px solid #ffffff12;background:transparent;color:#eef4f5;text-align:left;font:inherit;cursor:pointer}.suggestion:hover,.suggestion[aria-selected="true"]{background:#254047}.kind{display:inline-block;min-width:60px;color:#c5f267;font-size:11px}.empty{padding:11px 13px;color:#aab8c2;font-size:12px}""",
+    js=r"""export default function({parentElement, data, setStateValue}) {
+      const input=parentElement.querySelector('input'), list=parentElement.querySelector('.suggestions');
+      let timer, composing=false, active=true, closed=Boolean(data.resolved), selected=-1, matches=[];
+      input.setAttribute('aria-label',data.label);
+      list.id=data.id+'-options';input.setAttribute('aria-controls',list.id);
+      if(input.dataset.command!==String(data.command)) {
+        input.value=data.value||'';input.dataset.command=String(data.command);
+      }
+      const emit=event=>{
+        const count=Number(input.dataset.sequence||0)+1;input.dataset.sequence=String(count);
+        setStateValue('event',{...event,command:data.command,nonce:String(Date.now())+':'+count});
+      };
+      const choose=item=>{clearTimeout(timer);input.value=item.label;closed=true;list.replaceChildren();input.setAttribute('aria-expanded','false');emit({type:'select',id:item.id});};
+      const draw=()=>{
+        list.replaceChildren();matches=[];selected=-1;input.removeAttribute('aria-activedescendant');
+        const query=input.value.trim().toLowerCase();
+        if(closed||query.length<2){input.setAttribute('aria-expanded','false');return;}
+        const terms=query.split(/\s+/);
+        for(const stop of data.stops||[]) {
+          if(terms.every(t=>stop.name.toLowerCase().includes(t))||String(stop.id)===query)
+            matches.push({id:'stop:'+stop.id,kind:'stop',label:stop.name+' · stop '+stop.id});
+          if(matches.length===6)break;
         }
-        st.session_state[key + "_selected_name"] = item["name"]
+        if(query===(data.placeQuery||'').toLowerCase())matches.push(...(data.places||[]));
+        matches=matches.slice(0,12);
+        matches.forEach((item,index)=>{
+          const button=document.createElement('button');button.type='button';button.className='suggestion';button.id=data.id+'-option-'+index;button.setAttribute('role','option');button.setAttribute('aria-selected','false');button.tabIndex=-1;
+          const kind=document.createElement('span');kind.className='kind';kind.textContent=item.kind==='stop'?'STOP':'PLACE';
+          const title=document.createElement('span');title.textContent=item.label;button.append(kind,title);
+          button.onmousedown=e=>e.preventDefault();button.onclick=()=>choose(item);list.append(button);
+        });
+        if(!matches.length){const note=document.createElement('div');note.className='empty';note.textContent=query.length<3?'Type one more letter for places.':query===(data.placeQuery||'').toLowerCase()?(data.placeError?'Place search unavailable. Try a stop.':'No matches. Try a fuller name or address.'):'Searching places…';list.append(note);}
+        input.setAttribute('aria-expanded','true');
+      };
+      const change=()=>{
+        clearTimeout(timer);closed=false;draw();
+        if(data.resolved && input.dataset.invalidated!==String(data.command)){
+          input.dataset.invalidated=String(data.command);emit({type:'edit',value:input.value});
+        }
+        if(!composing)timer=setTimeout(()=>{if(active)emit({type:'query',value:input.value});},1100);
+      };
+      const focus=()=>{closed=false;draw();};
+      const blur=()=>{closed=true;list.replaceChildren();input.setAttribute('aria-expanded','false');};
+      const start=()=>{composing=true;clearTimeout(timer);};
+      const end=()=>{composing=false;change();};
+      const keydown=e=>{
+        if(e.isComposing||composing)return;
+        if(e.key==='Escape'){closed=true;list.replaceChildren();input.setAttribute('aria-expanded','false');return;}
+        if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+          e.preventDefault();if(closed){closed=false;draw();}if(!matches.length)return;
+          selected=(selected+(e.key==='ArrowDown'?1:-1)+matches.length)%matches.length;
+          [...list.children].forEach((button,i)=>button.setAttribute('aria-selected',String(i===selected)));
+          input.setAttribute('aria-activedescendant',data.id+'-option-'+selected);return;
+        }
+        if(e.key==='Enter'&&!closed&&matches.length){e.preventDefault();choose(matches[Math.max(0,selected)]);}
+      };
+      input.addEventListener('input',change);input.addEventListener('focus',focus);input.addEventListener('blur',blur);input.addEventListener('compositionstart',start);input.addEventListener('compositionend',end);input.addEventListener('keydown',keydown);draw();
+      if(!data.resolved && (data.typing || input.value!==(data.value||''))) timer=setTimeout(()=>{if(active)emit({type:'query',value:input.value});},1100);
+      return ()=>{active=false;clearTimeout(timer);for(const [type,fn] of [['input',change],['focus',focus],['blur',blur],['compositionstart',start],['compositionend',end],['keydown',keydown]])input.removeEventListener(type,fn);};
+    }""",
+)
 
 
-def edit_location(key):
-    st.session_state.pop(key + "_point", None)
-    st.session_state.pop(key + "_selected_name", None)
+def set_location(key, value, point):
+    st.session_state[key + "_value"] = value
+    st.session_state[key + "_selected_name"] = value
+    st.session_state[key + "_point"] = point
+    st.session_state[key + "_typing"] = False
+    st.session_state[key + "_command"] = st.session_state.get(key + "_command", 0) + 1
+
+
+def apply_location_event(key, event, stops, places):
+    if (
+        not isinstance(event, dict)
+        or not event.get("nonce")
+        or event["nonce"] == st.session_state.get(key + "_last_event")
+    ):
+        return False
+    st.session_state[key + "_last_event"] = event["nonce"]
+    if "command" in event and event["command"] != st.session_state.get(
+        key + "_command", 0
+    ):
+        return False
+    if event.get("type") in ("query", "edit"):
+        st.session_state[key + "_typing"] = event.get("type") == "edit"
+        st.session_state[key + "_value"] = str(event.get("value", ""))[:150]
+        st.session_state.pop(key + "_point", None)
+        st.session_state.pop(key + "_selected_name", None)
+        return True
+    if event.get("type") == "select":
+        options = {
+            "stop:"
+            + str(s["id"]): {
+                "label": s["name"] + " · stop " + str(s["id"]),
+                "lat": s["lat"],
+                "lon": s["lon"],
+            }
+            for s in stops
+        }
+        options.update({place["id"]: place for place in places})
+        item = options.get(event.get("id"))
+        if item:
+            set_location(key, item["label"], coordinate(item["lat"], item["lon"]))
+            return True
+    return False
 
 
 def location_suggestions(key, label):
-    """Searchable stop/address field with one suggestion menu."""
-    query = st.text_input(
-        label,
-        placeholder="Type a stop, address, or place…",
-        key=key + "_value",
-        autocomplete="street-address",
-        on_change=edit_location,
-        args=(key,),
-    ) or ""
+    query = st.session_state.get(key + "_value", "")
     point = st.session_state.get(key + "_point")
-    if point and st.session_state.get(key + "_selected_name") == query:
-        return point
-
-    matches = {}
-    normalized = query.strip()
-    if len(normalized) >= 2 and api_enabled:
-        terms = normalized.casefold().split()
-        try:
-            for stop in cached_stops():
-                if all(term in stop["name"].casefold() for term in terms) or str(stop["id"]) == normalized:
-                    title = f"🚏 {stop['name']} · stop {stop['id']}"
-                    matches[title] = {"name": stop["name"], "lat": stop["lat"], "lon": stop["lon"]}
-        except ApiError as error:
-            st.warning(str(error))
-        if len(normalized) >= 3:
-            cache = st.session_state.setdefault(key + "_place_cache", {})
-            qkey = normalized.casefold()
-            if qkey not in cache:
-                try:
-                    cache[qkey] = api_request("/api/addresses?" + urlencode({"q": normalized})).get("results", [])
-                except ApiError:
-                    cache[qkey] = []
-            for place in cache[qkey]:
-                matches[f"⌖ {place['name']} · place"] = place
-
-    st.session_state[key + "_suggestions"] = matches
-    st.selectbox(
-        label + " suggestions",
-        options=[""] + list(matches),
-        index=0,
-        format_func=lambda value: value or "Choose a matching stop or place",
-        key=key + "_suggestion",
-        on_change=select_suggestion,
-        args=(key,),
-        label_visibility="collapsed",
+    resolved = (
+        point is not None and st.session_state.get(key + "_selected_name") == query
     )
-    return None
+    stops, places, failed = [], [], False
+    if api_enabled:
+        try:
+            stops = cached_stops()
+        except ApiError:
+            st.caption("Stop search temporarily unavailable.")
+    if (
+        not resolved
+        and not st.session_state.get(key + "_typing")
+        and len(query.strip()) >= 3
+        and api_enabled
+    ):
+        cache = st.session_state.setdefault(key + "_place_cache", {})
+        qkey = query.strip().casefold()
+        try:
+            if qkey not in cache:
+                found = api_request(
+                    "/api/addresses?" + urlencode({"q": query.strip()})
+                ).get("results", [])
+                if len(cache) >= 100:
+                    cache.clear()
+                cache[qkey] = found
+            places = [
+                {
+                    "id": f"place:{qkey}:{i}",
+                    "kind": "place",
+                    "label": p["name"],
+                    "lat": p["lat"],
+                    "lon": p["lon"],
+                }
+                for i, p in enumerate(cache[qkey])
+            ]
+        except ApiError:
+            failed = True
+    result = location_picker_component(
+        key=key + "_picker",
+        data={
+            "id": key,
+            "label": label,
+            "value": query,
+            "command": st.session_state.get(key + "_command", 0),
+            "resolved": resolved,
+            "typing": st.session_state.get(key + "_typing", False),
+            "stops": stops,
+            "places": places,
+            "placeQuery": query.strip(),
+            "placeError": failed,
+        },
+        default={"event": None},
+        on_event_change=lambda: None,
+    )
+    if apply_location_event(key, result.event, stops, places):
+        st.rerun()
+    return point if resolved else None
 
 
 def current_location():
@@ -221,6 +338,7 @@ def current_location():
         key="origin_gps",
         default={"location": None},
         on_location_change=lambda: None,
+        width="content",
     )
     location = gps.location
     if location and location.get("error"):
@@ -230,20 +348,32 @@ def current_location():
             "unavailable": "Location unavailable. Try an address or place search.",
             "unsupported": "Open LeaveNow directly in Chrome or Safari to use location.",
         }
-        st.warning(messages.get(location["error"], "Location unavailable. Please retry."))
+        st.warning(
+            messages.get(location["error"], "Location unavailable. Please retry.")
+        )
         return None
-    if not location or location.get("latitude") is None or location.get("longitude") is None:
+    if (
+        not location
+        or location.get("latitude") is None
+        or location.get("longitude") is None
+    ):
         return None
     try:
         point = coordinate(location["latitude"], location["longitude"])
     except (ValueError, TypeError):
-        st.warning("The browser returned an invalid position. Search for an address or stop instead.")
+        st.warning(
+            "The browser returned an invalid position. Search for an address or stop instead."
+        )
         return None
     if not (29.35 <= point["lat"] <= 30.1 and -82.9 <= point["lon"] <= -81.9):
         st.warning("Outside Gainesville. Choose a local address, place, or stop.")
         return None
     if location.get("accuracy") is not None and location["accuracy"] > 100:
         st.caption("Approximate device location; check the map before travelling.")
+    token = location.get("requestId") or str(sorted(location.items()))
+    if token == st.session_state.get("origin_gps_seen"):
+        return None
+    st.session_state["origin_gps_seen"] = token
     return point
 
 
@@ -253,14 +383,10 @@ with left:
         '<div class="ln-kicker"><span class="ln-pin">●</span>01 / STARTING FROM</div>'
     )
     origin = location_suggestions("origin", "Starting from")
-    gps_column, _ = st.columns([1, 2])
-    with gps_column:
-        device_origin = current_location()
+    device_origin = current_location()
     if device_origin is not None:
-        st.session_state["origin_gps_result"] = device_origin
-        st.session_state["origin_point"] = device_origin
-        st.session_state["origin_selected_name"] = "⌖ Current location"
-        origin = device_origin
+        set_location("origin", "Current location", device_origin)
+        st.rerun()
 with right:
     markup(
         '<div class="ln-kicker"><span class="ln-pin destination">◆</span>02 / WHERE TO?</div>'

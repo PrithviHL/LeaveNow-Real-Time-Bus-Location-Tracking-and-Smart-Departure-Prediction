@@ -49,17 +49,19 @@ def trip_fixture():
     }
 
 
+def picker_event(app, key, event):
+    app.session_state["_test_" + key + "_picker"] = {
+        **event,
+        "nonce": str(time.time_ns()),
+    }
+    return app.run()
+
+
 def ready_app():
     app = AppTest.from_file(str(APP), default_timeout=20).run()
-    next(t for t in app.text_input if t.key == "origin_value").set_value("Reitz")
-    app.run()
-    next(s for s in app.selectbox if s.key == "origin_suggestion").set_value("🚏 Reitz Union · stop 1007")
-    app.run()
-    next(t for t in app.text_input if t.key == "destination_value").set_value("Rosa")
-    app.run()
-    next(s for s in app.selectbox if s.key == "destination_suggestion").set_value("🚏 Rosa Parks RTS Downtown Station · stop 2940")
-    app.run()
-    return app.run()
+    picker_event(app, "origin", {"type": "select", "id": "stop:1007"})
+    picker_event(app, "destination", {"type": "select", "id": "stop:2940"})
+    return app
 
 
 class AppTests(unittest.TestCase):
@@ -82,69 +84,87 @@ class AppTests(unittest.TestCase):
         identity.start()
         self.addCleanup(identity.stop)
 
-    def test_stop_and_place_suggestions_share_one_autocomplete(self):
-        def reply(endpoint, payload=None):
-            self.assertTrue(endpoint.startswith("/api/addresses?"))
-            return {"results": [{"name": "Marston Science Library", "lat": 29.6479899, "lon": -82.3439469}]}
+        def component(name, **definition):
+            from types import SimpleNamespace
+            import streamlit as st
 
-        with patch("client.api_request", side_effect=reply):
+            def render(**kwargs):
+                key = kwargs["key"]
+                if name == "leavenow_location_picker":
+                    st.session_state["_test_render_" + key] = kwargs["data"]
+                    return SimpleNamespace(event=st.session_state.get("_test_" + key))
+                return SimpleNamespace(location=st.session_state.get("_test_gps"))
+
+            return render
+
+        components = patch("streamlit.components.v2.component", side_effect=component)
+        components.start()
+        self.addCleanup(components.stop)
+
+    def test_stop_and_place_suggestions_share_one_autocomplete(self):
+        with patch(
+            "client.api_request",
+            return_value={
+                "results": [
+                    {"name": "Reitz Cafe", "lat": 29.6479899, "lon": -82.3439469}
+                ]
+            },
+        ):
             app = AppTest.from_file(str(APP), default_timeout=20).run()
-            origin = next(t for t in app.text_input if t.key == "origin_value")
-            origin.set_value("Marston Science")
-            app.run()
-            choices = next(s for s in app.selectbox if s.key == "origin_suggestion")
-            self.assertIn("⌖ Marston Science Library · place", choices.options)
-            choices.set_value("⌖ Marston Science Library · place").run()
+            picker_event(app, "origin", {"type": "query", "value": "Reitz"})
+            data = app.session_state["_test_render_origin_picker"]
+            self.assertTrue(any(s["name"] == "Reitz Union" for s in data["stops"]))
+            self.assertEqual(data["places"][0]["label"], "Reitz Cafe")
+            picker_event(
+                app, "origin", {"type": "select", "id": data["places"][0]["id"]}
+            )
+            self.assertFalse(app.exception)
             self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.6479899)
 
-    def test_location_edits_clear_selection_and_gps_resolves_origin(self):
-        from types import SimpleNamespace
+    def test_location_edits_clear_selection_and_old_gps_does_not_overwrite_them(self):
         app = ready_app()
-        self.assertIsNotNone(app.session_state["resolved_origin"])
-        next(t for t in app.text_input if t.key == "origin_value").set_value("edited address").run()
+        app.session_state["_test_gps"] = {
+            "latitude": 29.65,
+            "longitude": -82.34,
+            "accuracy": 15,
+            "requestId": 1,
+        }
+        app.run()
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.65)
+        picker_event(app, "origin", {"type": "edit", "value": "new address"})
         self.assertIsNone(app.session_state["resolved_origin"])
-        with patch("streamlit.components.v2.component", return_value=lambda **kwargs: SimpleNamespace(location={"latitude":29.65,"longitude":-82.34,"accuracy":15})):
-            app = AppTest.from_file(str(APP), default_timeout=20).run()
-            self.assertEqual(app.session_state["resolved_origin"]["lat"],29.65)
+        self.assertTrue(
+            next(b for b in app.button if b.label == "Find my next bus").disabled
+        )
+        picker_event(app, "origin", {"type": "select", "id": "stop:1007"})
+        self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.64514)
 
     def test_gps_success_and_denial_are_handled_separately(self):
-        from types import SimpleNamespace
-
         for location in [
-            {"latitude": 29.65, "longitude": -82.34, "accuracy": 15},
+            {"latitude": 29.65, "longitude": -82.34, "accuracy": 15, "requestId": 1},
             {"error": "denied"},
         ]:
-            with patch(
-                "streamlit.components.v2.component",
-                return_value=lambda **kwargs: SimpleNamespace(location=location),
-            ):
-                app = AppTest.from_file(str(APP), default_timeout=20).run()
-                self.assertFalse(app.exception)
-                if "error" in location:
-                    self.assertIsNone(app.session_state["resolved_origin"])
-                    self.assertTrue(
-                        any("permission was denied" in w.value for w in app.warning)
-                    )
-                else:
-                    self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.65)
+            app = AppTest.from_file(str(APP), default_timeout=20)
+            app.session_state["_test_gps"] = location
+            app.run()
+            self.assertFalse(app.exception)
+            if "error" in location:
+                self.assertIsNone(app.session_state["resolved_origin"])
+                self.assertTrue(
+                    any("permission was denied" in w.value for w in app.warning)
+                )
+            else:
+                self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.65)
 
     def test_autocomplete_selection_resolves_both_locations(self):
-        app = AppTest.from_file(str(APP), default_timeout=20).run()
-        next(t for t in app.text_input if t.key == "origin_value").set_value("Reitz")
-        app.run()
-        next(s for s in app.selectbox if s.key == "origin_suggestion").set_value("🚏 Reitz Union · stop 1007")
-        app.run()
-        next(t for t in app.text_input if t.key == "destination_value").set_value("Rosa")
-        app.run()
-        next(s for s in app.selectbox if s.key == "destination_suggestion").set_value("🚏 Rosa Parks RTS Downtown Station · stop 2940").run()
-        app.run()
+        app = ready_app()
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.64514)
         self.assertEqual(app.session_state["resolved_destination"]["lat"], 29.645567)
         self.assertFalse(
             next(b for b in app.button if b.label == "Find my next bus").disabled
         )
-        next(t for t in app.text_input if t.key == "origin_value").set_value(None).run()
+        picker_event(app, "origin", {"type": "query", "value": ""})
         self.assertTrue(
             next(b for b in app.button if b.label == "Find my next bus").disabled
         )
@@ -175,17 +195,23 @@ class AppTests(unittest.TestCase):
         next(b for b in app.button if b.label == "↗ Reitz → Downtown").click().run()
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state["origin_value"], "Reitz Union")
-        self.assertEqual(app.session_state["destination_value"], "Rosa Parks RTS Downtown Station")
+        self.assertEqual(
+            app.session_state["destination_value"], "Rosa Parks RTS Downtown Station"
+        )
         app.run()
         self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.64514)
         self.assertEqual(app.session_state["resolved_destination"]["lat"], 29.645567)
         next(b for b in app.button if b.label == "⇄ Swap locations").click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["origin_value"], "Rosa Parks RTS Downtown Station")
+        self.assertEqual(
+            app.session_state["origin_value"], "Rosa Parks RTS Downtown Station"
+        )
         self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.645567)
         next(b for b in app.button if b.label == "↙ Downtown → Reitz").click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["origin_value"], "Rosa Parks RTS Downtown Station")
+        self.assertEqual(
+            app.session_state["origin_value"], "Rosa Parks RTS Downtown Station"
+        )
 
     def test_select_live_bus_shows_boarding_eta_without_replanning(self):
         now = int(time.time() * 1000)
@@ -209,7 +235,9 @@ class AppTests(unittest.TestCase):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             selector = next(
-                s for s in app.selectbox if s.label == "Choose a bus toward your destination"
+                s
+                for s in app.selectbox
+                if s.label == "Choose a bus toward your destination"
             )
             selector.set_value("901").run()
             self.assertFalse(app.exception)
@@ -242,7 +270,9 @@ class AppTests(unittest.TestCase):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             next(
-                s for s in app.selectbox if s.label == "Choose a bus toward your destination"
+                s
+                for s in app.selectbox
+                if s.label == "Choose a bus toward your destination"
             ).set_value("902").run()
             self.assertFalse(app.exception)
             self.assertTrue(any("Direction verified" in i.value for i in app.info))

@@ -9,7 +9,7 @@ const code = execFileSync(
     `import ast
 p=ast.parse(open('prototypes/streamlit/app.py').read())
 for n in ast.walk(p):
- if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr=='component':
+ if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr=='component' and n.args and ast.literal_eval(n.args[0])=='leavenow_gps':
   for k in n.keywords:
    if k.arg=='js': print(ast.literal_eval(k.value))
 `,
@@ -60,16 +60,34 @@ test("GPS reports denial, timeout, unavailable and unsupported distinctly", () =
   assert.equal(view.states[0].value.error, "unsupported");
 });
 
-test('a precise-location timeout falls back to a bounded approximate request',()=>{
- let calls=0;
- const view=setup({getCurrentPosition:(yes,no,options)=>{
-  calls++;
-  if(calls===1){assert.equal(options.enableHighAccuracy,true);no({code:3});}
-  else {assert.equal(options.enableHighAccuracy,false);assert.equal(options.timeout,20000);yes({coords:{latitude:29.65,longitude:-82.34,accuracy:250}});}
- }});
- view.button.onclick();assert.equal(calls,2);assert.equal(view.states[0].value.accuracy,250);
+test("a precise-location timeout falls back to a bounded approximate request", () => {
+  let calls = 0;
+  const view = setup({
+    getCurrentPosition: (yes, no, options) => {
+      calls++;
+      if (calls === 1) {
+        assert.equal(options.enableHighAccuracy, true);
+        no({ code: 3 });
+      } else {
+        assert.equal(options.enableHighAccuracy, false);
+        assert.equal(options.timeout, 20000);
+        yes({ coords: { latitude: 29.65, longitude: -82.34, accuracy: 250 } });
+      }
+    },
+  });
+  view.button.onclick();
+  assert.equal(calls, 2);
+  assert.equal(view.states[0].value.accuracy, 250);
 });
-test('denied permission does not trigger another location request',()=>{
- let calls=0;const view=setup({getCurrentPosition:(yes,no)=>{calls++;no({code:1});}});
- view.button.onclick();assert.equal(calls,1);assert.equal(view.states[0].value.error,'denied');
+test("denied permission does not trigger another location request", () => {
+  let calls = 0;
+  const view = setup({
+    getCurrentPosition: (yes, no) => {
+      calls++;
+      no({ code: 1 });
+    },
+  });
+  view.button.onclick();
+  assert.equal(calls, 1);
+  assert.equal(view.states[0].value.error, "denied");
 });
