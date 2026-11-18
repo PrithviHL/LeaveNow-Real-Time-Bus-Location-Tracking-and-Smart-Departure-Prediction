@@ -1,6 +1,7 @@
 // Server-side, bounded diagnostic. Never prints credentials, provider URLs or user input.
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
+import { Schedule } from "../src/server/schedule.js";
 import { BusTimeClient } from "../src/server/bustime.js";
 import { agencyTime } from "../src/server/planner.js";
 import { patternServesJourney } from "../src/server/tracking.js";
@@ -11,7 +12,7 @@ const data = JSON.parse(
 const stops = new Map(data.stops.map((s) => [String(s.code || s.id), s]));
 const client = new BusTimeClient(process.env.GAINESVILLE_RTS_API_KEY, {
   feed: process.env.GAINESVILLE_RTS_FEED || "",
-  schedule: { data, stops: data.stops },
+  schedule: new Schedule(data),
   requestsPerMinute: 10,
 });
 try {
@@ -21,6 +22,7 @@ try {
       client.vehicles(route),
       client.patterns(route),
     ]);
+    for (const v of vehicles) v.tripId = client.resolveVehicleTrip(v, patterns);
     console.log(
       "Tracking diagnostic: " +
         JSON.stringify({
@@ -42,13 +44,6 @@ try {
           ),
         }),
     );
-    if (route === "20") {
-      const raw = await client.request("getvehicles", {rt:route, ...(client.feed ? {rtpidatafeed:client.feed} : {}), tmres:"s"}, 5000);
-      console.log("Trip identity diagnostic: " + JSON.stringify({
-        live: (raw.vehicle || []).slice(0,3).map(v => ({trip:v.tatripid, original:v.origtatripno, date:v.stsd})),
-        gtfs: data.trips.filter(t=>String(data.routes[t.route]?.short)===route).slice(0,3).map(t=>t.id),
-      }));
-    }
     for (const vehicle of vehicles) {
       if (!vehicle.tripId) continue;
       const pattern = patterns.find((p) => p.id === vehicle.patternId);

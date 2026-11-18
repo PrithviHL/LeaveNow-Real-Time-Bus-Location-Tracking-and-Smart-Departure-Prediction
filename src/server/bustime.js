@@ -1,4 +1,5 @@
 import { API_BASE, inServiceArea } from "./gainesville.js";
+import { resolveVehicleTrip } from "./trip-identity.js";
 import { agencyTime } from "./planner.js";
 
 // Clever Devices BusTime v3, per the supplied developer guide. Gainesville endpoints only.
@@ -168,6 +169,8 @@ export class BusTimeClient {
             .map(String)
             .find((t) => this.tripIds.has(t)) || "",
         VehicleId: String(p.vid || ""),
+        NativeTripId: String(p.tatripid || ""),
+        OriginalTripId: String(p.origtatripno || ""),
         RouteDir: String(p.rtdir || ""),
         Destination: String(p.des || ""),
         ETA: p.prdtm,
@@ -209,6 +212,9 @@ export class BusTimeClient {
           .sort((a, b) => a.sequence - b.sequence),
       }));
   }
+  resolveVehicleTrip(vehicle, patterns) {
+    return resolveVehicleTrip(vehicle, patterns, this.schedule);
+  }
   async vehicles(route = null) {
     const rtpidatafeed = await this.feedName();
     // Tracking requests only its selected route; fleet diagnostics keep batching.
@@ -246,6 +252,9 @@ export class BusTimeClient {
         label: String(v.des || ""),
         tripId: [v.origtatripno, v.tatripid].map(String).find(t => this.tripIds.has(t)) || "",
         serviceDate: String(v.stsd || "").replaceAll("-", ""),
+        nativeTripId: String(v.tatripid || ""),
+        originalTripId: String(v.origtatripno || ""),
+        scheduledStart: v.stst === undefined || v.stst === null || v.stst === "" ? null : Number(v.stst),
         patternId: String(v.pid ?? ""),
         patternDistance:
           v.pdist === undefined || v.pdist === null || v.pdist === ""

@@ -47,6 +47,21 @@ export async function trackBoarding(
   const [arrivals, vehicles, departures, patterns] = results.map((r) =>
     r.status === "fulfilled" ? r.value : [],
   );
+  if (selectedTrip) {
+    for (const v of vehicles)
+      v.tripId = client.resolveVehicleTrip?.(v, patterns) || v.tripId || "";
+    for (const p of [...arrivals, ...departures]) {
+      if (p.ExternalTripId) continue;
+      const v = vehicles.find(
+        (v) =>
+          String(v.id) === String(p.VehicleId) &&
+          v.tripId &&
+          ((p.NativeTripId && p.NativeTripId === v.nativeTripId) ||
+            (p.OriginalTripId && p.OriginalTripId === v.originalTripId)),
+      );
+      if (v) p.ExternalTripId = v.tripId;
+    }
+  }
   const validPrediction = (p) =>
     (!selectedTrip || String(p.ExternalTripId || "") === selectedTrip.id) &&
     String(p.RouteId) === route &&
