@@ -45,6 +45,57 @@ try {
           ),
         }),
     );
+    if (route === "20") {
+      console.log(
+        "Route20 assignment snapshot: " +
+          JSON.stringify(
+            vehicles.map((v) => ({
+              bus: v.id,
+              trip: v.tripId,
+              date: v.serviceDate,
+              start: v.scheduledStart,
+              pattern: v.patternId,
+              progress: v.patternDistance,
+            })),
+          ),
+      );
+      for (const settings of [
+        { maxWalk: 15, maxTransfers: 1 },
+        { maxWalk: 5, maxTransfers: 0 },
+      ]) {
+        const response = await fetch("http://127.0.0.1:3001/api/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            origin: stops.get("816"),
+            destination: stops.get("171"),
+            mode: "leave_now",
+            ...settings,
+          }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!response.ok) continue;
+        const plan = await response.json();
+        console.log(
+          "Reported search diagnostic: " +
+            JSON.stringify({
+              settings,
+              partial: plan.partial,
+              options: plan.journeys.map((j) => ({
+                departure: j.departsAt,
+                source: j.timingLabel,
+                legs: j.legs.map((l) => ({
+                  trip: l.tripId,
+                  instance: l.instance,
+                  board: l.boarding.id,
+                  off: l.alighting.id,
+                  assigned: l.liveVehicleId,
+                })),
+              })),
+            }),
+        );
+      }
+    }
     for (const vehicle of vehicles) {
       if (!vehicle.tripId) continue;
       const pattern = patterns.find((p) => p.id === vehicle.patternId);
