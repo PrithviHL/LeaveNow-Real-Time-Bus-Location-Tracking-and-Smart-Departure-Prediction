@@ -75,7 +75,7 @@ try {
         { signal: AbortSignal.timeout(20000) },
       );
       if (!response.ok) continue;
-      const result = await response.json();
+      let result = await response.json();
       if (!result.buses?.some((b) => b.position)) continue;
       if (planChecks >= 2) break;
       planChecks++;
@@ -93,13 +93,8 @@ try {
       });
       if (!plannedResponse.ok) continue;
       const plan = await plannedResponse.json();
-      const index = plan.journeys.findIndex((j) =>
-        j.legs?.some(
-          (l) =>
-            l.tripId === vehicle.tripId &&
-            l.boarding.id === boarding.id &&
-            l.alighting.id === alighting.id,
-        ),
+      const index = plan.journeys.findIndex(
+        (j) => j.legs?.length === 1 && j.legs[0].liveVehicleId,
       );
       console.log(
         "Full journey tracking check: " +
@@ -119,6 +114,22 @@ try {
           }),
       );
       if (index < 0) continue;
+      const leg = plan.journeys[index].legs[0];
+      const tracked = await fetch(
+        "http://127.0.0.1:3001/api/tracking?" +
+          new URLSearchParams({
+            stop: leg.boarding.id,
+            alight: leg.alighting.id,
+            route: leg.route,
+            trip: leg.tripId,
+            date: leg.instance.split(":")[0],
+          }),
+        { signal: AbortSignal.timeout(15000) },
+      );
+      if (!tracked.ok) continue;
+      result = await tracked.json();
+      if (!result.buses?.some((b) => b.position && b.tripId === leg.tripId))
+        continue;
       console.log(
         "Verified live tracking example: " +
           JSON.stringify({
