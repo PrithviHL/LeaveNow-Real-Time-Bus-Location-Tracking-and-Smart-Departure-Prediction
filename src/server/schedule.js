@@ -1,5 +1,6 @@
 import { recommendJourneys } from "./recommendations.js";
-import { readFileSync } from "node:fs";
+import { WalkingGraph } from "./walking.js";
+import { existsSync, readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import {
   agencyTime,
@@ -54,12 +55,19 @@ function lowerBound(items, value, field) {
 
 export class Schedule {
   static load(file) {
-    return new Schedule(JSON.parse(gunzipSync(readFileSync(file)).toString()));
+    const graphFile = new URL(
+      "./walking-data/gainesville.json.gz",
+      import.meta.url,
+    );
+    return new Schedule(JSON.parse(gunzipSync(readFileSync(file)).toString()), {
+      walking: existsSync(graphFile) ? WalkingGraph.load(graphFile) : null,
+    });
   }
-  constructor(data) {
+  constructor(data, { walking = null } = {}) {
     if (data.schema !== 1 || data.timezone !== "America/New_York")
       throw new Error("Unsupported timetable artifact");
     this.data = data;
+    this.walking = walking;
     this.tripIndex = new Map(data.trips.map((t) => [t.id, t]));
     this.stops = data.stops;
     this.index = new Map(this.stops.map((s, i) => [s.id, i]));
@@ -127,6 +135,59 @@ export class Schedule {
     this.dayCache.set(date, trips);
     return trips;
   }
+  walk(from, to) {
+    const direct = distance(from, to);
+    if (this.walking) {
+      const route = this.walking.route(from, to);
+      if (route.status === "unreachable") return null;
+      if (route.status === "routed")
+        return {
+          ...route,
+          walkMinutes: Math.ceil(route.seconds / 60),
+          walkPath: route.path,
+          walkSource: "osm",
+        };
+    }
+    const speed = this.walking ? 65 : WALK_METERS_PER_MINUTE;
+    const factor = this.walking ? 1.5 : WALK_DETOUR;
+    const meters = Math.ceil(direct * factor),
+      seconds = Math.ceil((meters * 60) / speed);
+    return {
+      meters,
+      seconds,
+      walkMinutes: Math.ceil(seconds / 60),
+      walkPath: null,
+      walkSource: "estimate",
+    };
+  }
+  accessStops(location, maxWalk, reverse = false) {
+    if (!this.walking)
+      return nearby(
+        this.stops,
+        location,
+        12,
+        (maxWalk * WALK_METERS_PER_MINUTE) / WALK_DETOUR,
+      );
+    return nearby(this.stops, location, 40, maxWalk * 65)
+      .flatMap((stop) => {
+        const walk = reverse
+          ? this.walk(stop, location)
+          : this.walk(location, stop);
+        return walk && walk.walkMinutes <= maxWalk
+          ? [
+              {
+                ...stop,
+                meters: walk.meters,
+                walkMinutes: walk.walkMinutes,
+                walkPath: walk.walkPath,
+                walkSource: walk.walkSource,
+              },
+            ]
+          : [];
+      })
+      .sort((a, b) => a.walkMinutes - b.walkMinutes || a.meters - b.meters)
+      .slice(0, 12);
+  }
   neighbors(index) {
     if (this.footpaths.has(index)) return this.footpaths.get(index);
     const from = this.stops[index],
@@ -139,14 +200,17 @@ export class Schedule {
       )
         continue;
       const meters = distance(from, to);
-      if (meters <= 400)
-        list.push({
-          index: i,
-          meters: Math.round(meters),
-          seconds: Math.ceil(
-            ((meters * WALK_DETOUR) / WALK_METERS_PER_MINUTE) * 60,
-          ),
-        });
+      if (meters <= 400) {
+        const walk = this.walk(from, to);
+        if (walk && walk.meters <= 400)
+          list.push({
+            index: i,
+            meters: walk.meters,
+            seconds: walk.seconds,
+            walkPath: walk.walkPath,
+            walkSource: walk.walkSource,
+          });
+      }
     }
     this.footpaths.set(index, list);
     return list;
@@ -182,6 +246,8 @@ export class Schedule {
       from: { ...from },
       to: { ...to },
       meters: walk.meters,
+      walkPath: walk.walkPath,
+      walkSource: walk.walkSource,
       walkMinutes: Math.ceil(walk.seconds / 60),
       bufferMinutes: buffer,
       minimumSeconds: Math.max(walk.seconds + buffer * 60, minimum),
@@ -267,9 +333,8 @@ export class Schedule {
     const end = mode === "arrive_by" ? reference : start + 36 * 3600_000;
     const firstDate = shiftDate(serviceDate(start), -1),
       lastDate = serviceDate(end);
-    const radius = (maxWalk * WALK_METERS_PER_MINUTE) / WALK_DETOUR;
-    const origins = nearby(this.stops, origin, 12, radius),
-      destinations = nearby(this.stops, destination, 12, radius);
+    const origins = this.accessStops(origin, maxWalk),
+      destinations = this.accessStops(destination, maxWalk, true);
     const omap = new Map(origins.map((s) => [this.index.get(s.id), s])),
       dmap = new Map(destinations.map((s) => [this.index.get(s.id), s]));
     const base = {
@@ -289,8 +354,12 @@ export class Schedule {
         "Direct or one-transfer journeys; 36-hour departure window / 8-hour arrival lookback; up to 12 nearby stops at each end.",
       walking: {
         approximate: true,
-        speedMetersPerMinute: 80,
-        detourFactor: 1.25,
+        source: this.walking
+          ? "OpenStreetMap with labelled fallback"
+          : "Estimated distance",
+        speedMetersPerMinute: this.walking ? 65 : WALK_METERS_PER_MINUTE,
+        detourFactor: this.walking ? null : WALK_DETOUR,
+        graph: this.walking?.metadata() || null,
         bufferMinutes: 2,
       },
     };

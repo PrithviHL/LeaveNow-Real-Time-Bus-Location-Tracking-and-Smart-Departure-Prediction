@@ -248,7 +248,7 @@ def main():
                 with urlopen(request, timeout=30) as response:
                     journeys = json.load(response).get("journeys", [])
                 print(
-                    f"Timetable routing startup check: {len(journeys)} journeys, {sum(j.get('transfers',0)>0 for j in journeys)} with transfers.",
+                    f"Timetable routing startup check: {len(journeys)} journeys, {sum(j.get('transfers',0)>0 for j in journeys)} with transfers; {sum(j.get('boarding',{}).get('walkSource') == 'osm' for j in journeys)} with OSM access walks.",
                     flush=True,
                 )
             except (URLError, OSError, ValueError):

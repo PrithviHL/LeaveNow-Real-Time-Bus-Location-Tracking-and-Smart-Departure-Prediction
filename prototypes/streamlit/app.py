@@ -612,6 +612,17 @@ def show_results():
     ticket(journey)
     walk, arrive = st.columns(2)
     walk.metric("Estimated walk to stop", f"{journey['walkMinutes']} min")
+    if any(
+        part.get("walkSource") == "estimate"
+        for part in [
+            journey.get("boarding", {}),
+            journey.get("alighting", {}),
+            journey.get("connection") or {},
+        ]
+    ):
+        st.caption(
+            "Some walking paths are unavailable; those times are conservative estimates."
+        )
     arrive.metric("Reach destination", clock_time(journey["destinationAt"]))
     with st.expander("Trip details"):
         timeline(journey)
@@ -626,7 +637,7 @@ def show_results():
         else 0
     )
     show_bus_tracking(trip, journey, legs[leg_index], light_map)
-    st.caption("Blue/purple = bus route · Green = estimated walk.")
+    st.caption("Blue/purple = bus route · Green = walking path.")
     st.link_button(
         "Walking directions to your boarding stop ↗",
         f"https://www.google.com/maps/dir/?api=1&origin={trip['origin']['lat']},{trip['origin']['lon']}&destination={journey['boarding']['lat']},{journey['boarding']['lon']}&travelmode=walking",
@@ -636,6 +647,6 @@ def show_results():
 show_results()
 with st.expander("About the estimates"):
     st.caption(
-        "Live = RTS prediction. Scheduled = timetable. Walking distances are approximate."
+        "Live = RTS prediction. Scheduled = timetable. Walks use mapped OSM paths where available."
     )
     st.caption("Route lines show the published path, not GPS history.")

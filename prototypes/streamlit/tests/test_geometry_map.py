@@ -21,7 +21,26 @@ class GeometryMapTests(unittest.TestCase):
         paths = [l for l in layers if l.type == "PathLayer"]
         self.assertEqual(len(paths), 2)
         self.assertEqual(paths[1].data[0]["path"], path)
-        self.assertEqual(paths[0].data[0]["label"], "Walking connection")
+        self.assertEqual(paths[0].data[0]["label"], "Walk · estimate")
+
+    def test_routed_walking_geometry_replaces_the_straight_connection(self):
+        a = {"name": "Start", "lat": 29.64, "lon": -82.34}
+        b = {"name": "Board", "lat": 29.65, "lon": -82.32}
+        path = [[-82.34, 29.64], [-82.34, 29.65], [-82.32, 29.65]]
+        leg = {"boarding": b, "alighting": b, "route": "1"}
+        with patch("presentation.st.pydeck_chart") as chart, patch(
+            "presentation.markup"
+        ), patch("presentation.st.caption"):
+            map_view(
+                a, b, {"legs": [leg], "boarding": {"walkPath": path}, "alighting": {}}
+            )
+        walks = next(
+            layer
+            for layer in chart.call_args.args[0].layers
+            if layer.type == "PathLayer"
+        )
+        self.assertEqual(walks.data[0]["path"], path)
+        self.assertEqual(walks.data[0]["label"], "Walk · OpenStreetMap")
 
     def test_missing_shape_does_not_draw_bus_chord(self):
         a = {"name": "Board", "lat": 29.64, "lon": -82.34}
@@ -33,4 +52,9 @@ class GeometryMapTests(unittest.TestCase):
         self.assertEqual(
             len([l for l in chart.call_args.args[0].layers if l.type == "PathLayer"]), 1
         )
-        caption.assert_called_once()
+        self.assertTrue(
+            any(
+                "Published route geometry is unavailable" in call.args[0]
+                for call in caption.call_args_list
+            )
+        )

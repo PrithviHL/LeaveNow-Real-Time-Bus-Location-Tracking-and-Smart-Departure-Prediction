@@ -103,16 +103,31 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
                 )
         walks = []
         connections = [
-            (origin, legs[0]["boarding"]),
-            (legs[-1]["alighting"], destination),
+            (origin, legs[0]["boarding"], journey.get("boarding", {}).get("walkPath")),
+            (
+                legs[-1]["alighting"],
+                destination,
+                journey.get("alighting", {}).get("walkPath"),
+            ),
         ]
-        connections += [(a["alighting"], b["boarding"]) for a, b in zip(legs, legs[1:])]
-        for a, b in connections:
+        connections += [
+            (
+                a["alighting"],
+                b["boarding"],
+                (journey.get("connection") or {}).get("walkPath"),
+            )
+            for a, b in zip(legs, legs[1:])
+        ]
+        for a, b, route in connections:
             walks.append(
                 {
-                    "path": [[a["lon"], a["lat"]], [b["lon"], b["lat"]]],
-                    "label": "Walking connection",
-                    "detail": "Approximate straight-line walk, not street directions",
+                    "path": route or [[a["lon"], a["lat"]], [b["lon"], b["lat"]]],
+                    "label": "Walk · OpenStreetMap" if route else "Walk · estimate",
+                    "detail": (
+                        "Mapped footpaths; short access links estimated"
+                        if route
+                        else "Routing unavailable · approximate connection"
+                    ),
                 }
             )
         if paths:
@@ -143,7 +158,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
                 "Published route geometry is unavailable for one or more bus legs; their bus lines are hidden."
             )
     bounds = points + (
-        [{"position": p} for row in paths for p in row["path"]]
+        [{"position": p} for row in paths + walks for p in row["path"]]
         if journey and origin and destination
         else []
     )
@@ -170,6 +185,10 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
         tooltip={"text": "{label}\n{detail}"},
     )
     st.pydeck_chart(deck, height=420)
+    if journey:
+        st.caption(
+            "Walking routes [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) · Short access links and times are estimates."
+        )
     markup(
         '<div class="ln-legend"><span><i class="you"></i>Your start</span><span><i class="dest"></i>Destination</span><span><i class="stop"></i>Bus stops</span></div>'
     )
