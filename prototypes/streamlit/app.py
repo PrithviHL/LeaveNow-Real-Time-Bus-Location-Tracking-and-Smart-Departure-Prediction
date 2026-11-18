@@ -165,7 +165,7 @@ location_picker_component = st.components.v2.component(
 .picker input{box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #64748066;border-radius:10px;background:#0f1d2b;color:#f5f7fa;font:inherit;outline:none}.picker input:focus{border-color:#c5f267;box-shadow:0 0 0 2px #c5f26733}.suggestions:not(:empty){margin-top:4px;max-height:240px;overflow-y:auto;border:1px solid #64748066;border-radius:10px;background:#14232d;box-shadow:0 10px 24px #0005}.suggestion{display:block;width:100%;padding:11px 13px;border:0;border-bottom:1px solid #ffffff12;background:transparent;color:#eef4f5;text-align:left;font:inherit;cursor:pointer}.suggestion:hover,.suggestion[aria-selected="true"]{background:#254047}.kind{display:inline-block;min-width:60px;color:#c5f267;font-size:11px}.empty{padding:11px 13px;color:#aab8c2;font-size:12px}""",
     js=r"""export default function({parentElement, data, setStateValue}) {
       const input=parentElement.querySelector('input'), list=parentElement.querySelector('.suggestions');
-      let timer, composing=false, active=true, closed=Boolean(data.resolved), selected=-1, matches=[];
+      let timer, composing=false, active=true, closed=Boolean(data.resolved)||input.dataset.open==='0', selected=-1, matches=[];
       input.setAttribute('aria-label',data.label);
       list.id=data.id+'-options';input.setAttribute('aria-controls',list.id);
       if(input.dataset.command!==String(data.command)) {
@@ -175,7 +175,7 @@ location_picker_component = st.components.v2.component(
         const count=Number(input.dataset.sequence||0)+1;input.dataset.sequence=String(count);
         setStateValue('event',{...event,command:data.command,nonce:String(Date.now())+':'+count});
       };
-      const choose=item=>{clearTimeout(timer);input.value=item.label;closed=true;list.replaceChildren();input.setAttribute('aria-expanded','false');emit({type:'select',id:item.id});};
+      const choose=item=>{clearTimeout(timer);input.value=item.label;closed=true;input.dataset.open='0';list.replaceChildren();input.setAttribute('aria-expanded','false');emit({type:'select',id:item.id});};
       const draw=()=>{
         list.replaceChildren();matches=[];selected=-1;input.removeAttribute('aria-activedescendant');
         const query=input.value.trim().toLowerCase();
@@ -198,21 +198,21 @@ location_picker_component = st.components.v2.component(
         input.setAttribute('aria-expanded','true');
       };
       const change=()=>{
-        clearTimeout(timer);closed=false;draw();
-        if(data.resolved && input.dataset.invalidated!==String(data.command)){
+        clearTimeout(timer);closed=false;input.dataset.open='1';draw();
+        if(!composing && data.resolved && input.dataset.invalidated!==String(data.command)){
           input.dataset.invalidated=String(data.command);emit({type:'edit',value:input.value});
         }
         if(!composing)timer=setTimeout(()=>{if(active)emit({type:'query',value:input.value});},1100);
       };
-      const focus=()=>{closed=false;draw();};
-      const blur=()=>{closed=true;list.replaceChildren();input.setAttribute('aria-expanded','false');};
+      const focus=()=>{closed=false;input.dataset.open='1';draw();};
+      const blur=()=>{closed=true;input.dataset.open='0';list.replaceChildren();input.setAttribute('aria-expanded','false');};
       const start=()=>{composing=true;clearTimeout(timer);};
       const end=()=>{composing=false;change();};
       const keydown=e=>{
         if(e.isComposing||composing)return;
-        if(e.key==='Escape'){closed=true;list.replaceChildren();input.setAttribute('aria-expanded','false');return;}
+        if(e.key==='Escape'){closed=true;input.dataset.open='0';list.replaceChildren();input.setAttribute('aria-expanded','false');return;}
         if(e.key==='ArrowDown'||e.key==='ArrowUp'){
-          e.preventDefault();if(closed){closed=false;draw();}if(!matches.length)return;
+          e.preventDefault();if(closed){closed=false;input.dataset.open='1';draw();}if(!matches.length)return;
           selected=(selected+(e.key==='ArrowDown'?1:-1)+matches.length)%matches.length;
           [...list.children].forEach((button,i)=>button.setAttribute('aria-selected',String(i===selected)));
           input.setAttribute('aria-activedescendant',data.id+'-option-'+selected);return;

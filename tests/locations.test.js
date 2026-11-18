@@ -167,3 +167,9 @@ test("preset/GPS commands update the field and IME input waits for composition t
   v.flush();
   assert.equal(v.events.at(-1).type, "query");
 });
+
+test('Escape stays closed when place results arrive; focusing reopens suggestions',()=>{
+ const v=setup();v.input.value='Reitz';v.input.fire('input');v.input.fire('keydown',{key:'Escape'});
+ v.render({value:'Reitz',placeQuery:'Reitz',places:[{id:'place:reitz:0',kind:'place',label:'Reitz Cafe'}]});
+ assert.equal(v.list.children.length,0);v.input.fire('focus');assert.equal(v.list.children.length,2);
+});
