@@ -51,10 +51,14 @@ def trip_fixture():
 
 def ready_app():
     app = AppTest.from_file(str(APP), default_timeout=20).run()
-    next(s for s in app.selectbox if s.key == "origin_method").set_value("Coordinates")
-    next(s for s in app.selectbox if s.key == "destination_method").set_value(
-        "Coordinates"
-    )
+    next(t for t in app.text_input if t.key == "origin_value").set_value("Reitz")
+    app.run()
+    next(s for s in app.selectbox if s.key == "origin_suggestion").set_value("🚏 Reitz Union · stop 1007")
+    app.run()
+    next(t for t in app.text_input if t.key == "destination_value").set_value("Rosa")
+    app.run()
+    next(s for s in app.selectbox if s.key == "destination_suggestion").set_value("🚏 Rosa Parks RTS Downtown Station · stop 2940")
+    app.run()
     return app.run()
 
 
@@ -78,35 +82,30 @@ class AppTests(unittest.TestCase):
         identity.start()
         self.addCleanup(identity.stop)
 
-    def test_address_search_requires_explicit_search_and_selection(self):
+    def test_stop_and_place_suggestions_share_one_autocomplete(self):
         def reply(endpoint, payload=None):
             self.assertTrue(endpoint.startswith("/api/addresses?"))
-            return {
-                "results": [
-                    {
-                        "name": "Marston Science Library",
-                        "lat": 29.6479899,
-                        "lon": -82.3439469,
-                    }
-                ]
-            }
+            return {"results": [{"name": "Marston Science Library", "lat": 29.6479899, "lon": -82.3439469}]}
 
-        with patch("client.api_request", side_effect=reply) as request:
-            app = ready_app()
-            next(s for s in app.selectbox if s.key == "origin_method").set_value(
-                "Address or place"
-            ).run()
-            next(
-                t for t in app.text_input if t.key == "origin_address_query"
-            ).set_value("Marston Science Library")
-            request.assert_not_called()
-            next(b for b in app.button if b.label == "Search places").click().run()
-            self.assertFalse(app.exception)
-            next(
-                s for s in app.selectbox if s.key == "origin_address_choice"
-            ).set_value(0).run()
-            self.assertFalse(app.exception)
+        with patch("client.api_request", side_effect=reply):
+            app = AppTest.from_file(str(APP), default_timeout=20).run()
+            origin = next(t for t in app.text_input if t.key == "origin_value")
+            origin.set_value("Marston Science")
+            app.run()
+            choices = next(s for s in app.selectbox if s.key == "origin_suggestion")
+            self.assertIn("⌖ Marston Science Library · place", choices.options)
+            choices.set_value("⌖ Marston Science Library · place").run()
             self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.6479899)
+
+    def test_location_edits_clear_selection_and_gps_resolves_origin(self):
+        from types import SimpleNamespace
+        app = ready_app()
+        self.assertIsNotNone(app.session_state["resolved_origin"])
+        next(t for t in app.text_input if t.key == "origin_value").set_value("edited address").run()
+        self.assertIsNone(app.session_state["resolved_origin"])
+        with patch("streamlit.components.v2.component", return_value=lambda **kwargs: SimpleNamespace(location={"latitude":29.65,"longitude":-82.34,"accuracy":15})):
+            app = AppTest.from_file(str(APP), default_timeout=20).run()
+            self.assertEqual(app.session_state["resolved_origin"]["lat"],29.65)
 
     def test_gps_success_and_denial_are_handled_separately(self):
         from types import SimpleNamespace
@@ -119,10 +118,7 @@ class AppTests(unittest.TestCase):
                 "streamlit.components.v2.component",
                 return_value=lambda **kwargs: SimpleNamespace(location=location),
             ):
-                app = ready_app()
-                next(s for s in app.selectbox if s.key == "origin_method").set_value(
-                    "Use my location"
-                ).run()
+                app = AppTest.from_file(str(APP), default_timeout=20).run()
                 self.assertFalse(app.exception)
                 if "error" in location:
                     self.assertIsNone(app.session_state["resolved_origin"])
@@ -134,11 +130,13 @@ class AppTests(unittest.TestCase):
 
     def test_autocomplete_selection_resolves_both_locations(self):
         app = AppTest.from_file(str(APP), default_timeout=20).run()
-        origin = next(s for s in app.selectbox if s.key == "origin_stop")
-        self.assertIsNone(origin.value)
-        self.assertTrue(any("Reitz Union" in label for label in origin.options))
-        origin.set_value("1007")
-        next(s for s in app.selectbox if s.key == "destination_stop").set_value("2940")
+        next(t for t in app.text_input if t.key == "origin_value").set_value("Reitz")
+        app.run()
+        next(s for s in app.selectbox if s.key == "origin_suggestion").set_value("🚏 Reitz Union · stop 1007")
+        app.run()
+        next(t for t in app.text_input if t.key == "destination_value").set_value("Rosa")
+        app.run()
+        next(s for s in app.selectbox if s.key == "destination_suggestion").set_value("🚏 Rosa Parks RTS Downtown Station · stop 2940").run()
         app.run()
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.64514)
@@ -146,7 +144,7 @@ class AppTests(unittest.TestCase):
         self.assertFalse(
             next(b for b in app.button if b.label == "Find my next bus").disabled
         )
-        next(s for s in app.selectbox if s.key == "origin_stop").set_value(None).run()
+        next(t for t in app.text_input if t.key == "origin_value").set_value(None).run()
         self.assertTrue(
             next(b for b in app.button if b.label == "Find my next bus").disabled
         )
@@ -162,7 +160,7 @@ class AppTests(unittest.TestCase):
         with patch.dict("os.environ", {"LEAVENOW_API_CONFIGURED": "0"}), patch(
             "client.api_request"
         ) as request:
-            app = ready_app()
+            app = AppTest.from_file(str(APP), default_timeout=20).run()
             self.assertFalse(app.exception)
             self.assertTrue(
                 next(b for b in app.button if b.label == "Find my next bus").disabled
@@ -176,15 +174,18 @@ class AppTests(unittest.TestCase):
         app = AppTest.from_file(str(APP), default_timeout=20).run()
         next(b for b in app.button if b.label == "↗ Reitz → Downtown").click().run()
         self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["origin_value"], "Reitz Union")
+        self.assertEqual(app.session_state["destination_value"], "Rosa Parks RTS Downtown Station")
+        app.run()
         self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.64514)
         self.assertEqual(app.session_state["resolved_destination"]["lat"], 29.645567)
         next(b for b in app.button if b.label == "⇄ Swap locations").click().run()
         self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["origin_value"], "Rosa Parks RTS Downtown Station")
         self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.645567)
-        self.assertEqual(app.session_state["resolved_destination"]["lat"], 29.64514)
         next(b for b in app.button if b.label == "↙ Downtown → Reitz").click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["resolved_origin"]["lat"], 29.645567)
+        self.assertEqual(app.session_state["origin_value"], "Rosa Parks RTS Downtown Station")
 
     def test_select_live_bus_shows_boarding_eta_without_replanning(self):
         now = int(time.time() * 1000)

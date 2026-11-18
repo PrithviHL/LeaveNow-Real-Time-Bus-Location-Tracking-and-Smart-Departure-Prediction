@@ -56,12 +56,17 @@ if not api_enabled:
 
 
 def apply_preset(reverse=False):
-    a, b = (29.64514, -82.346983), (29.645567, -82.322697)
+    origin_name, destination_name = "Reitz Union", "Rosa Parks RTS Downtown Station"
+    origin, destination = (29.64514, -82.346983), (29.645567, -82.322697)
     if reverse:
-        a, b = b, a
-    for key, values in [("origin", a), ("destination", b)]:
-        st.session_state[key + "_method"] = "Coordinates"
-        st.session_state[key + "_lat"], st.session_state[key + "_lon"] = values
+        origin_name, destination_name = destination_name, origin_name
+        origin, destination = destination, origin
+    st.session_state["origin_value"] = origin_name
+    st.session_state["destination_value"] = destination_name
+    st.session_state["origin_point"] = {"lat": origin[0], "lon": origin[1]}
+    st.session_state["destination_point"] = {"lat": destination[0], "lon": destination[1]}
+    st.session_state["origin_selected_name"] = origin_name
+    st.session_state["destination_selected_name"] = destination_name
     st.session_state.pop("planned_trip", None)
 
 
@@ -70,12 +75,22 @@ def swap_locations():
     b = st.session_state.get("resolved_destination")
     if not a or not b:
         return
-    for key, point in [("origin", b), ("destination", a)]:
-        st.session_state[key + "_method"] = "Coordinates"
-        st.session_state[key + "_lat"] = point["lat"]
-        st.session_state[key + "_lon"] = point["lon"]
+    origin_label = st.session_state.get("origin_selected_name", "")
+    destination_label = st.session_state.get("destination_selected_name", "")
+    st.session_state["origin_value"] = destination_label
+    st.session_state["destination_value"] = origin_label
+    st.session_state["origin_selected_name"] = destination_label
+    st.session_state["destination_selected_name"] = origin_label
+    st.session_state["origin_point"] = b
+    st.session_state["destination_point"] = a
+    st.session_state["origin_gps_result"] = None
+    st.session_state.pop("origin_selected_suggestion", None)
+    st.session_state.pop("destination_selected_suggestion", None)
     st.session_state.pop("planned_trip", None)
 
+
+for _key in ("origin", "destination"):
+    st.session_state.setdefault(_key + "_value", "")
 
 with st.expander("Try an example"):
     preset_a, preset_b, spacer = st.columns([1, 1, 2])
@@ -98,7 +113,7 @@ def cached_stops():
 # Components v2 renders in the app page, avoiding iframe geolocation policy issues.
 gps_component = st.components.v2.component(
     "leavenow_gps",
-    html='<button type="button">⌖ Use my current location</button><p role="status" aria-live="polite">Click to request your location.</p>',
+    html='<button type="button" aria-label="Use my current location">⌖ Use my current location</button><p role="status" aria-live="polite">Click to request your location.</p>',
     css="button {background:#c5f267;color:#152217;border:0;border-radius:8px;padding:12px 18px;font:600 14px sans-serif;cursor:pointer} p {font:13px sans-serif;color:var(--st-text-color)}",
     js="""export default function({parentElement,setStateValue}) {
       const button=parentElement.querySelector('button'), status=parentElement.querySelector('p');
@@ -133,113 +148,103 @@ gps_component = st.components.v2.component(
 )
 
 
-def choose_address(key):
-    st.caption("Search Gainesville places. Queries are sent to Photon.")
-    with st.form(key + "_address_search"):
-        query = st.text_input(
-            "Address or place",
-            placeholder="e.g. Marston Science Library, Gainesville",
-            key=key + "_address_query",
-        )
-        search = st.form_submit_button("Search places")
-    if search:
-        st.session_state.pop(key + "_address_results", None)
-        if not 3 <= len(query.strip()) <= 150:
-            st.warning("Enter 3–150 characters to search.")
-        else:
-            try:
-                data = api_request("/api/addresses?" + urlencode({"q": query.strip()}))
-                st.session_state[key + "_address_results"] = (
-                    query.strip(),
-                    data["results"],
-                )
-                st.session_state.pop(key + "_address_choice", None)
-            except ApiError as error:
-                st.warning(str(error))
-    saved = st.session_state.get(key + "_address_results")
-    st.caption("Place data © OpenStreetMap contributors · Photon")
-    if not saved or saved[0] != query.strip():
-        return None
-    results = saved[1]
-    if not results:
-        st.info(
-            "No matching place in Gainesville. Try a fuller address or coordinates."
-        )
-        return None
-    selected = st.selectbox(
-        "Select the matching place",
-        range(len(results)),
-        index=None,
-        format_func=lambda i: results[i]["name"],
-        key=key + "_address_choice",
+def select_suggestion(key):
+    selected = st.session_state.get(key + "_suggestion")
+    item = st.session_state.get(key + "_suggestions", {}).get(selected)
+    if item:
+        st.session_state[key + "_value"] = item["name"]
+        st.session_state[key + "_point"] = {
+            "lat": float(item["lat"]),
+            "lon": float(item["lon"]),
+        }
+        st.session_state[key + "_selected_name"] = item["name"]
+
+
+def edit_location(key):
+    st.session_state.pop(key + "_point", None)
+    st.session_state.pop(key + "_selected_name", None)
+
+
+def location_suggestions(key, label):
+    """Searchable stop/address field with one suggestion menu."""
+    query = st.text_input(
+        label,
+        placeholder="Type a stop, address, or place…",
+        key=key + "_value",
+        autocomplete="street-address",
+        on_change=edit_location,
+        args=(key,),
+    ) or ""
+    point = st.session_state.get(key + "_point")
+    if point and st.session_state.get(key + "_selected_name") == query:
+        return point
+
+    matches = {}
+    normalized = query.strip()
+    if len(normalized) >= 2 and api_enabled:
+        terms = normalized.casefold().split()
+        try:
+            for stop in cached_stops():
+                if all(term in stop["name"].casefold() for term in terms) or str(stop["id"]) == normalized:
+                    title = f"🚏 {stop['name']} · stop {stop['id']}"
+                    matches[title] = {"name": stop["name"], "lat": stop["lat"], "lon": stop["lon"]}
+        except ApiError as error:
+            st.warning(str(error))
+        if len(normalized) >= 3:
+            cache = st.session_state.setdefault(key + "_place_cache", {})
+            qkey = normalized.casefold()
+            if qkey not in cache:
+                try:
+                    cache[qkey] = api_request("/api/addresses?" + urlencode({"q": normalized})).get("results", [])
+                except ApiError:
+                    cache[qkey] = []
+            for place in cache[qkey]:
+                matches[f"⌖ {place['name']} · place"] = place
+
+    st.session_state[key + "_suggestions"] = matches
+    st.selectbox(
+        label + " suggestions",
+        options=[""] + list(matches),
+        index=0,
+        format_func=lambda value: value or "Choose a matching stop or place",
+        key=key + "_suggestion",
+        on_change=select_suggestion,
+        args=(key,),
+        label_visibility="collapsed",
     )
-    if selected is None:
+    return None
+
+
+def current_location():
+    """Render the device location action immediately under the origin field."""
+    gps = gps_component(
+        key="origin_gps",
+        default={"location": None},
+        on_location_change=lambda: None,
+    )
+    location = gps.location
+    if location and location.get("error"):
+        messages = {
+            "denied": "Location permission was denied. Allow it in browser settings.",
+            "timeout": "Location timed out. Try an address or place search.",
+            "unavailable": "Location unavailable. Try an address or place search.",
+            "unsupported": "Open LeaveNow directly in Chrome or Safari to use location.",
+        }
+        st.warning(messages.get(location["error"], "Location unavailable. Please retry."))
         return None
-    chosen = results[selected]
-    st.caption("Selected: " + chosen["name"])
-    return coordinate(chosen["lat"], chosen["lon"])
-
-
-def choose_stop(key, label):
-    if not api_enabled:
-        st.info(
-            "Stop suggestions are temporarily unavailable. Choose Coordinates or try a sample location."
-        )
+    if not location or location.get("latitude") is None or location.get("longitude") is None:
         return None
     try:
-        matches = cached_stops()
-    except ApiError as error:
-        st.error(str(error))
+        point = coordinate(location["latitude"], location["longitude"])
+    except (ValueError, TypeError):
+        st.warning("The browser returned an invalid position. Search for an address or stop instead.")
         return None
-    if not matches:
-        st.info("No stops are available. Try coordinates or a sample location.")
+    if not (29.35 <= point["lat"] <= 30.1 and -82.9 <= point["lon"] <= -81.9):
+        st.warning("Outside Gainesville. Choose a local address, place, or stop.")
         return None
-    by_id = {str(stop["id"]): stop for stop in matches}
-    selected = st.selectbox(
-        label,
-        options=list(by_id),
-        index=None,
-        format_func=lambda stop_id: f"{by_id[stop_id]['name']} · stop {stop_id}",
-        placeholder="Type a stop or destination, e.g. Reitz, Rosa Parks, Shands…",
-        filter_mode="fuzzy",
-        key=key + "_stop",
-    )
-    st.caption("Type a stop name and select a match.")
-    if selected is None:
-        return None
-    stop = by_id[selected]
-    return coordinate(stop["lat"], stop["lon"])
-
-
-def choose_coordinates(key):
-    col1, col2 = st.columns(2)
-    lat = col1.number_input(
-        "Latitude",
-        min_value=29.35,
-        max_value=30.1,
-        value=(
-            None
-            if key + "_lat" in st.session_state
-            else (29.64514 if key == "origin" else 29.645567)
-        ),
-        format="%.6f",
-        key=key + "_lat",
-    )
-    lon = col2.number_input(
-        "Longitude",
-        min_value=-82.9,
-        max_value=-81.9,
-        value=(
-            None
-            if key + "_lon" in st.session_state
-            else (-82.346983 if key == "origin" else -82.322697)
-        ),
-        format="%.6f",
-        key=key + "_lon",
-    )
-    if key == "destination":
-        st.caption("Example coordinates. Replace with your destination.")
-    return coordinate(lat, lon)
+    if location.get("accuracy") is not None and location["accuracy"] > 100:
+        st.caption("Approximate device location; check the map before travelling.")
+    return point
 
 
 left, right = st.columns(2)
@@ -247,80 +252,21 @@ with left:
     markup(
         '<div class="ln-kicker"><span class="ln-pin">●</span>01 / STARTING FROM</div>'
     )
-    origin_mode = st.selectbox(
-        "Starting location method",
-        ["Search a stop", "Use my location", "Coordinates", "Address or place"],
-        label_visibility="collapsed",
-        key="origin_method",
-    )
-    if origin_mode == "Use my location":
-        gps = gps_component(
-            key="origin_gps",
-            default={"location": None},
-            on_location_change=lambda: None,
-        )
-        location = gps.location
-        if location and location.get("error"):
-            messages = {
-                "denied": "Location permission was denied. Allow it in browser settings.",
-                "timeout": "Location timed out. Try address search.",
-                "unavailable": "Location unavailable. Try address search.",
-                "unsupported": "Open LeaveNow directly in Chrome or Safari to use location.",
-            }
-            st.warning(
-                messages.get(location["error"], "Location unavailable. Please retry.")
-            )
-        if (
-            location
-            and location.get("latitude") is not None
-            and location.get("longitude") is not None
-        ):
-            try:
-                origin = coordinate(location["latitude"], location["longitude"])
-                if not (
-                    29.35 <= origin["lat"] <= 30.1 and -82.9 <= origin["lon"] <= -81.9
-                ):
-                    origin = None
-                    st.warning("Outside Gainesville. Choose a local address or stop.")
-                else:
-                    st.success("Current location received.")
-                    if location.get("accuracy", 0) > 100:
-                        st.warning(
-                            "Approximate location. Check the map before travelling."
-                        )
-                    if location.get("accuracy") is not None:
-                        st.caption(
-                            f"Device-reported accuracy: about {round(location['accuracy'])} m"
-                        )
-            except (ValueError, TypeError):
-                origin = None
-                st.warning(
-                    "The browser returned an invalid position. Use stop search or coordinates instead."
-                )
-        else:
-            origin = None
-    elif origin_mode == "Address or place":
-        origin = choose_address("origin")
-    elif origin_mode == "Coordinates":
-        origin = choose_coordinates("origin")
-    else:
-        origin = choose_stop("origin", "Starting stop")
+    origin = location_suggestions("origin", "Starting from")
+    gps_column, _ = st.columns([1, 2])
+    with gps_column:
+        device_origin = current_location()
+    if device_origin is not None:
+        st.session_state["origin_gps_result"] = device_origin
+        st.session_state["origin_point"] = device_origin
+        st.session_state["origin_selected_name"] = "⌖ Current location"
+        origin = device_origin
 with right:
     markup(
         '<div class="ln-kicker"><span class="ln-pin destination">◆</span>02 / WHERE TO?</div>'
     )
-    destination_mode = st.selectbox(
-        "Destination method",
-        ["Search a stop", "Coordinates", "Address or place"],
-        label_visibility="collapsed",
-        key="destination_method",
-    )
-    if destination_mode == "Address or place":
-        destination = choose_address("destination")
-    elif destination_mode == "Coordinates":
-        destination = choose_coordinates("destination")
-    else:
-        destination = choose_stop("destination", "Destination stop")
+    destination = location_suggestions("destination", "Where to")
+
 
 st.session_state["resolved_origin"] = origin
 st.session_state["resolved_destination"] = destination
