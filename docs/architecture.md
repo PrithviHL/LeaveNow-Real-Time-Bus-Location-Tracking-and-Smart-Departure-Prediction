@@ -22,7 +22,7 @@ flowchart LR
 - `geocoding.js` and stop APIs: combined UI suggestions using local stop matches and debounced external address lookup.
 - `prototypes/streamlit/app.py` and `presentation.py`: compact search, trip controls, account menu, bus selection, map and timeline.
 
-Stops are shortlisted by proximity, then walking paths determine feasible access and egress. The planner considers up to 40 nearby graph candidates at each end and retains up to 12 routed stops. Direct and one-transfer timetable trips are checked against walking time, the two-minute boarding allowance, transfer buffers, service dates, and user time controls. Up to three distinct first departures are ranked; dominated transfer variants are grouped. Live updates recheck feasibility. Bus paths are published GTFS shapes, not recorded vehicle trails. All agency times use `America/New_York`.
+Stops are shortlisted by proximity, then walking paths determine feasible access and egress. The planner considers up to 40 nearby graph candidates at each end and retains up to 12 routed stops. Direct and one-transfer timetable trips are checked against walking time, the approach boarding allowance (two minutes, or zero at the exact boarding stop with no walk), transfer buffers, service dates, and user time controls. Up to three distinct first departures are ranked; dominated transfer variants are grouped. Live updates recheck feasibility. Bus paths are published GTFS shapes, not recorded vehicle trails. All agency times use `America/New_York`.
 
 See [routing limits](timetable-routing.md), [OSM coverage and fallback policy](walking-routing.md), and [API fields](api.md). These bounded searches do not prove that every possible journey was considered.
 

@@ -8,7 +8,7 @@ import {
   nearby,
   WALK_METERS_PER_MINUTE,
   WALK_DETOUR,
-  BOARDING_BUFFER,
+  boardingBuffer,
 } from "./planner.js";
 
 const DAY = 86400_000;
@@ -361,6 +361,8 @@ export class Schedule {
         detourFactor: this.walking ? null : WALK_DETOUR,
         graph: this.walking?.metadata() || null,
         bufferMinutes: 2,
+        atStopBufferMinutes: 0,
+        atStopThresholdMeters: 1,
       },
     };
     if (!origins.length || !destinations.length)
@@ -401,7 +403,8 @@ export class Schedule {
           if (
             access &&
             stop[3] === 0 &&
-            depart >= start + (access.walkMinutes + BOARDING_BUFFER) * 60000 &&
+            depart >=
+              start + (access.walkMinutes + boardingBuffer(access)) * 60000 &&
             depart <= end
           ) {
             for (let j = i + 1; j < times.length; j++) {
@@ -439,15 +442,17 @@ export class Schedule {
     first.sort((a, b) =>
       mode === "arrive_by"
         ? b.departsAt -
-          b.access.walkMinutes * 60000 -
-          (a.departsAt - a.access.walkMinutes * 60000)
+          (b.access.walkMinutes + boardingBuffer(b.access)) * 60000 -
+          (a.departsAt -
+            (a.access.walkMinutes + boardingBuffer(a.access)) * 60000)
         : a.arrivesAt - b.arrivesAt,
     );
     const emit = (legs, access, egress, connection = null) => {
       const first = legs[0],
         last = legs.at(-1),
         leaveAt =
-          first.departsAt - (access.walkMinutes + BOARDING_BUFFER) * 60000,
+          first.departsAt -
+          (access.walkMinutes + boardingBuffer(access)) * 60000,
         destinationAt = last.arrivesAt + egress.walkMinutes * 60000;
       if (
         leaveAt < start ||
@@ -490,6 +495,7 @@ export class Schedule {
         arrivesAt: last.arrivesAt,
         destinationAt,
         leaveAt,
+        boardingBufferMinutes: boardingBuffer(access),
         walkMinutes: access.walkMinutes,
         finalWalkMinutes: egress.walkMinutes,
         rideMinutes: Math.ceil(
@@ -527,7 +533,7 @@ export class Schedule {
       const direct = dmap.get(a.to);
       if (direct) emit([a], a.access, direct);
       const leave =
-        a.departsAt - (a.access.walkMinutes + BOARDING_BUFFER) * 60000;
+        a.departsAt - (a.access.walkMinutes + boardingBuffer(a.access)) * 60000;
       if (mode === "arrive_by" ? leave < cutoff : a.arrivesAt > cutoff)
         continue;
       if (!maxTransfers) continue;

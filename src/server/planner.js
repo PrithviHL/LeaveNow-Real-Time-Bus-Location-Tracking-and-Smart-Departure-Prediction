@@ -1,6 +1,14 @@
 export const WALK_METERS_PER_MINUTE = 80;
 export const WALK_DETOUR = 1.25;
 export const BOARDING_BUFFER = 2;
+export function boardingBuffer(stop) {
+  return Number.isFinite(stop?.meters) &&
+    stop.meters >= 0 &&
+    stop.meters <= 1 &&
+    stop.walkMinutes === 0
+    ? 0
+    : BOARDING_BUFFER;
+}
 export const MAX_FEED_AGE = 180_000;
 export function distance(a, b) {
   const rad = (n) => (n * Math.PI) / 180;
@@ -164,7 +172,8 @@ export function buildJourneys(
         !key ||
         !fresh(departure, now) ||
         !Number.isFinite(departsAt) ||
-        departsAt < now + (boarding.walkMinutes + BOARDING_BUFFER) * 60_000
+        departsAt <
+          now + (boarding.walkMinutes + boardingBuffer(boarding)) * 60_000
       )
         continue;
       for (const alighting of destinations) {
@@ -203,10 +212,12 @@ export function buildJourneys(
             alighting,
             departsAt,
             arrivesAt,
+            boardingBufferMinutes: boardingBuffer(boarding),
             walkMinutes: boarding.walkMinutes,
             finalWalkMinutes: alighting.walkMinutes,
             leaveAt:
-              departsAt - (boarding.walkMinutes + BOARDING_BUFFER) * 60_000,
+              departsAt -
+              (boarding.walkMinutes + boardingBuffer(boarding)) * 60_000,
             destinationAt: arrivesAt + alighting.walkMinutes * 60_000,
             feedTimestamp: Math.min(
               agencyTime(departure.Timestamp),
@@ -281,7 +292,7 @@ export async function planTrip(
           departsAt: agencyTime(p.ETA),
           catchable:
             agencyTime(p.ETA) >=
-            now + (stop.walkMinutes + BOARDING_BUFFER) * 60_000,
+            now + (stop.walkMinutes + boardingBuffer(stop)) * 60_000,
         })),
     )
     .sort((a, b) => a.stop.meters - b.stop.meters || a.departsAt - b.departsAt)
@@ -315,6 +326,8 @@ export async function planTrip(
       speedMetersPerMinute: WALK_METERS_PER_MINUTE,
       detourFactor: WALK_DETOUR,
       bufferMinutes: BOARDING_BUFFER,
+      atStopBufferMinutes: 0,
+      atStopThresholdMeters: 1,
       approximate: true,
     },
     scope:

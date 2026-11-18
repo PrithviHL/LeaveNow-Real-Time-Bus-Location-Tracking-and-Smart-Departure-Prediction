@@ -50,3 +50,7 @@ The clean proposed release passed **73 Node tests and 49 Python tests (122 total
 ## Hosted observation
 
 At 3:16 PM Eastern on November 18, the deployed commit `1e0bb6c` returned Bus 1806 on Route 20 for Palm Garden of Gainesville (822) → Oaks Mall (171), with fresh GPS and approach geometry. One same-generation boarding snapshot agreed between the plan and tracking responses. RTS supplied no verified downstream arrival in that sample; `alightingAt` remained null, while the plan retained its scheduled destination time under mixed provenance. This intentionally does not claim downstream live accuracy. The public health check returned `ok`; the new instance used about 230 MiB in a post-startup sample against its configured 512 MiB plan. See [the minimal recorded observation](live-check.json).
+
+### Subsequent at-stop policy change
+
+The recorded audit artifact above used the then-universal two-minute boarding allowance. The current policy removes that initial allowance only for a zero-walk origin within 1 m of the actual boarding stop; transfer minimums are unchanged. Current invariant tests and `scripts/verify-timing.js` use each journey’s `boardingBufferMinutes`. Re-run the script for policy-specific current counts; do not attribute the historical report counts to this newer policy without rerunning.

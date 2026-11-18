@@ -290,7 +290,7 @@ test("600 delayed-transfer scenarios preserve timing arithmetic and feasibility"
       assert.ok(j.leaveAt >= now);
       assert.equal(
         j.leaveAt,
-        j.legs[0].departsAt - (j.walkMinutes + 2) * 60000,
+        j.legs[0].departsAt - (j.walkMinutes + j.boardingBufferMinutes) * 60000,
       );
       assert.equal(
         j.destinationAt,

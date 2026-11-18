@@ -21,7 +21,7 @@ Browser (GPS, stop search, coordinates)
 
 Only the Node API receives `GAINESVILLE_RTS_API_KEY`. Streamlit reads `LEAVENOW_API_URL` server-side. GPS uses a native-page Streamlit Components v2 control and requires a user click plus browser permission. Search and coordinates are available when GPS is unavailable. Maps and the geolocation component require actual browser verification; Python AppTest checks server-rendered UI logic.
 
-The live direct-trip overlay checks include: nearby stops at each end, matching live trip and vehicle, downstream destination ETA, fresh predictions, sufficient walking time, and a two-minute boarding buffer. Direct and one-transfer timetable journeys, future departure/arrival controls, and live overlays are described in [timetable routing](timetable-routing.md).
+The live direct-trip overlay checks include: nearby stops at each end, matching live trip and vehicle, downstream destination ETA, fresh predictions, sufficient walking time, and a two-minute boarding buffer for approaching riders (zero for a zero-walk origin at the boarding stop). Direct and one-transfer timetable journeys, future departure/arrival controls, and live overlays are described in [timetable routing](timetable-routing.md).
 
 ## Docker Compose
 

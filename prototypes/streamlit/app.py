@@ -530,6 +530,14 @@ def show_bus_tracking(trip, journey, leg, light):
             tracked["walkMinutes"] = (journey.get("connection") or {}).get(
                 "walkMinutes", 0
             )
+            tracked["boardingBufferMinutes"] = max(
+                0,
+                math.ceil(
+                    (journey.get("connection") or {}).get("minimumSeconds", 0) / 60
+                )
+                - tracked["walkMinutes"],
+            )
+            tracked["bufferLabel"] = "connection buffer"
         ticket(tracked, bus=bus)
         arrival = live_arrival_summary(journey, leg, bus)
         if arrival:

@@ -345,12 +345,29 @@ def ticket(journey, bus=None):
             else "until scheduled departure" if scheduled else "until planned departure"
         )
     )
-    leave_at = departure - (journey["walkMinutes"] + 2) * 60000 if departure else None
+    buffer = journey.get("boardingBufferMinutes", 2)
+    leave_at = (
+        departure - (journey["walkMinutes"] + buffer) * 60000 if departure else None
+    )
     leave_label = (
-        ("Leave by " + clock_time(leave_at))
+        (
+            (
+                "Board at "
+                if buffer == 0 and journey["walkMinutes"] == 0
+                else "Leave by "
+            )
+            + clock_time(leave_at)
+        )
         if leave_at
         else "Waiting for RTS arrival prediction"
     )
+    buffer_caption = (
+        "At boarding stop · no extra buffer"
+        if buffer == 0 and journey["walkMinutes"] == 0
+        else f"{journey['walkMinutes']} min walk + {buffer} min {journey.get('bufferLabel', 'boarding buffer')}"
+    )
+    if buffer == 0 and departure and minutes <= 1:
+        buffer_caption += " · Be ready to board"
     warning = ""
     if live and leave_at and leave_at < time.time() * 1000:
         warning = '<p class="ln-kicker">Walking time + boarding buffer may exceed the available time.</p>'
@@ -358,7 +375,7 @@ def ticket(journey, bus=None):
         bus.get("destination") or journey["headsign"] if live else journey["headsign"]
     )
     markup(
-        f"""<div class="ln-ticket"><div class="ln-ticket-top"><span class="ln-route">RTS {escape(str(journey['route']))}</span><span class="ln-ticket-status">{label} · {transfer_label}</span></div><h2>{escape(headsign)}</h2><div class="ln-countdown">{countdown}<span>{countdown_caption}</span></div><div class="ln-leave"><b>↗ {escape(leave_label)}</b><span>{journey['walkMinutes']} min walk + 2 min boarding buffer</span></div>{warning}</div>"""
+        f"""<div class="ln-ticket"><div class="ln-ticket-top"><span class="ln-route">RTS {escape(str(journey['route']))}</span><span class="ln-ticket-status">{label} · {transfer_label}</span></div><h2>{escape(headsign)}</h2><div class="ln-countdown">{countdown}<span>{countdown_caption}</span></div><div class="ln-leave"><b>↗ {escape(leave_label)}</b><span>{escape(buffer_caption)}</span></div>{warning}</div>"""
     )
 
 

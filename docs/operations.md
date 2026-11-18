@@ -90,3 +90,7 @@ The initial map view is frozen per selected origin/destination and journey. Five
 ## Timing verification and live destination estimates
 
 Use [the timing audit](../benchmarks/timing/README.md) when changing ETA, walking or transfer logic. Live destination display requires a verified downstream prediction; the final walk stays estimated. For a transfer’s first leg, a new live arrival that exceeds the last-checked connection buffer triggers a warning to refresh alternatives, not a promise of reaching the destination. Predictions are selected by generation time, never by the most optimistic ETA. Rechecking every five seconds does not force RTS to publish new forecasts at that rate.
+
+## Riders already at the boarding stop
+
+The initial allowance is zero only when the selected origin coincides with the chosen boarding stop (within 1 m) and calculated walking time is zero. That is a statement about the entered origin, not proof of physical presence or boarding availability. Other boarding stops/nearby addresses retain their walk plus two-minute approach buffer. A 12:59 search at the stop can recommend a 1:00 departure; departed buses remain excluded. The card says **Board at** and **At boarding stop · no extra buffer**. Transfer walking/minimum connection buffers stay in force. Timetable, live overlay, legacy direct-only fallback, Arrive by and ticket leave-by calculations share this rule.

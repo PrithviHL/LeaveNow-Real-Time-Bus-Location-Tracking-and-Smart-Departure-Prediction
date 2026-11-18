@@ -40,7 +40,7 @@ Bounds keep the portfolio service practical:
 | Live lookup scope                    | Up to 12 endpoint IDs for near-time candidates   |
 | Returned choices                     | Up to 8                                          |
 
-The GTFS rules do not guarantee a bus will hold a connection. Demand-responsive pickup/dropoff types and in-seat/interlining transfers are not implemented as passenger-ready options. No fare optimization, wheelchair filtering, turn-by-turn walking, is claimed. Bus lines use the published trip shape clipped by GTFS distance along the shape; these are not recorded vehicle trails. Walking follows a bundled OSM pedestrian graph where covered, at 65 m/min with crossing/stair allowances; initial boarding includes two extra minutes. Short endpoint connectors and missing-coverage fallbacks remain estimates. See [walking routing](walking-routing.md) for exclusions and limits.
+The GTFS rules do not guarantee a bus will hold a connection. Demand-responsive pickup/dropoff types and in-seat/interlining transfers are not implemented as passenger-ready options. No fare optimization, wheelchair filtering, turn-by-turn walking, is claimed. Bus lines use the published trip shape clipped by GTFS distance along the shape; these are not recorded vehicle trails. Walking follows a bundled OSM pedestrian graph where covered, at 65 m/min with crossing/stair allowances; initial boarding includes two extra minutes unless the origin is at the chosen boarding stop with zero calculated walking time, in which case the extra initial buffer is zero. Short endpoint connectors and missing-coverage fallbacks remain estimates. See [walking routing](walking-routing.md) for exclusions and limits.
 
 ## Feed lifecycle
 

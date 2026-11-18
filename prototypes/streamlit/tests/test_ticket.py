@@ -49,3 +49,11 @@ class TicketTests(unittest.TestCase):
             "may exceed the available time",
             self.render({"arrivalAt": (self.now + 60) * 1000}),
         )
+
+    def test_at_stop_imminent_bus_has_no_extra_buffer(self):
+        self.journey["boardingBufferMinutes"] = 0
+        html = self.render({"arrivalAt": (self.now + 60) * 1000})
+        self.assertIn("At boarding stop · no extra buffer", html)
+        self.assertIn("Be ready to board", html)
+        self.assertNotIn("+ 2 min boarding buffer", html)
+        self.assertNotIn("may exceed the available time", html)

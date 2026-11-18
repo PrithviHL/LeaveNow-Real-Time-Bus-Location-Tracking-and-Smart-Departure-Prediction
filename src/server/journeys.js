@@ -2,7 +2,7 @@ import { serviceDate } from "./schedule.js";
 import { latestPredictions, predictionAtStop } from "./predictions.js";
 import { patternServesJourney } from "./tracking.js";
 import { recommendJourneys } from "./recommendations.js";
-import { agencyTime, fresh, planTrip } from "./planner.js";
+import { agencyTime, fresh, planTrip, boardingBuffer } from "./planner.js";
 
 export function routingOptions(raw, now = Date.now()) {
   const mode = raw.mode ?? "leave_now";
@@ -158,7 +158,8 @@ export async function overlayLive(result, client, schedule, now) {
       b = j.legs.at(-1);
     j.departsAt = a.departsAt;
     j.arrivesAt = b.arrivesAt;
-    j.leaveAt = a.departsAt - (j.walkMinutes + 2) * 60000;
+    j.boardingBufferMinutes = boardingBuffer(j.boarding || a.boarding);
+    j.leaveAt = a.departsAt - (j.walkMinutes + j.boardingBufferMinutes) * 60000;
     j.destinationAt = b.arrivesAt + j.finalWalkMinutes * 60000;
     if (j.legs.some((l) => l.arrivesAt <= l.departsAt)) continue;
     const earliest = result.mode === "arrive_by" ? now : result.requestedTime;

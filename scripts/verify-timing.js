@@ -57,7 +57,10 @@ for (let i = 0; i < 120; i++) {
     journeys++;
     transfers += j.transfers;
     assert.ok(j.leaveAt >= (mode === "arrive_by" ? now : when));
-    assert.equal(j.leaveAt, j.legs[0].departsAt - (j.walkMinutes + 2) * 60000);
+    assert.equal(
+      j.leaveAt,
+      j.legs[0].departsAt - (j.walkMinutes + j.boardingBufferMinutes) * 60000,
+    );
     assert.equal(
       j.destinationAt,
       j.legs.at(-1).arrivesAt + j.finalWalkMinutes * 60000,
