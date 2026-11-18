@@ -482,56 +482,59 @@ def show_bus_tracking(trip, journey, leg, light):
     )
     st.button("Refresh bus location", key="refresh_bus_location")
     bus = None
-    try:
-        if leg.get("tripId"):
-            data = api_request(
-                "/api/tracking?"
-                + urlencode(
-                    {
-                        "stop": leg["boarding"]["id"],
-                        "alight": leg["alighting"]["id"],
-                        "route": leg["route"],
-                        "trip": leg["tripId"],
-                        "date": (
-                            str(leg.get("instance", "")).split(":")[0]
-                            if leg.get("instance")
-                            else ""
-                        ),
-                    }
+    with st.container():
+        try:
+            if leg.get("tripId"):
+                data = api_request(
+                    "/api/tracking?"
+                    + urlencode(
+                        {
+                            "stop": leg["boarding"]["id"],
+                            "alight": leg["alighting"]["id"],
+                            "route": leg["route"],
+                            "trip": leg["tripId"],
+                            "date": (
+                                str(leg.get("instance", "")).split(":")[0]
+                                if leg.get("instance")
+                                else ""
+                            ),
+                        }
+                    )
                 )
+                matches = [
+                    b for b in data.get("buses", []) if b.get("tripId") == leg["tripId"]
+                ]
+                bus = matches[0] if len(matches) == 1 else None
+                if data.get("partial"):
+                    st.warning("Some live tracking data is temporarily unavailable.")
+            if bus:
+                st.caption(f"Bus {bus['id']} · assigned to this journey")
+                if not bus.get("position"):
+                    st.info("Trip ETA available. Waiting for fresh GPS.")
+            else:
+                st.info("Live tracking unavailable for this trip.")
+        except ApiError as error:
+            st.warning(str(error))
+        tracked = {
+            **journey,
+            "route": leg["route"],
+            "headsign": leg.get("headsign", journey["headsign"]),
+            "departsAt": leg["departsAt"],
+            "timingLabel": {
+                "live": "Live",
+                "mixed": "Live + Scheduled",
+                "scheduled": "Scheduled",
+            }.get(leg.get("timingSource", "scheduled"), "Scheduled"),
+        }
+        if leg["boarding"]["id"] != journey["boarding"]["id"]:
+            tracked["walkMinutes"] = (journey.get("connection") or {}).get(
+                "walkMinutes", 0
             )
-            matches = [
-                b for b in data.get("buses", []) if b.get("tripId") == leg["tripId"]
-            ]
-            bus = matches[0] if len(matches) == 1 else None
-            if data.get("partial"):
-                st.warning("Some live tracking data is temporarily unavailable.")
+        ticket(tracked, bus=bus)
         if bus:
-            st.caption(f"Bus {bus['id']} · assigned to this journey")
-            if not bus.get("position"):
-                st.info("Trip ETA available. Waiting for fresh GPS.")
-        else:
-            st.info("Live tracking unavailable for this trip.")
-    except ApiError as error:
-        st.warning(str(error))
-    tracked = {
-        **journey,
-        "route": leg["route"],
-        "headsign": leg.get("headsign", journey["headsign"]),
-        "departsAt": leg["departsAt"],
-        "timingLabel": {
-            "live": "Live",
-            "mixed": "Live + Scheduled",
-            "scheduled": "Scheduled",
-        }.get(leg.get("timingSource", "scheduled"), "Scheduled"),
-    }
-    if leg["boarding"]["id"] != journey["boarding"]["id"]:
-        tracked["walkMinutes"] = (journey.get("connection") or {}).get("walkMinutes", 0)
-    ticket(tracked, bus=bus)
-    if bus:
-        st.caption(
-            "Live boarding estimate for this trip. Destination and connection times below were last checked with the journey plan."
-        )
+            st.caption(
+                "Live boarding estimate for this trip. Destination and connection times below were last checked with the journey plan."
+            )
     map_view(trip["origin"], trip["destination"], journey, light=light, bus=bus)
     st.caption("Blue bus + line → green boarding pin · Updates every 5s.")
 

@@ -1,6 +1,8 @@
 """Escaped presentation components and an interactive map for the Streamlit UI."""
 
 from html import escape
+import hashlib
+import json
 from pathlib import Path
 from urllib.parse import quote
 import math
@@ -111,6 +113,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
         pdk.Layer(
             "ScatterplotLayer",
             points,
+            id="trip-stops",
             get_position="position",
             get_fill_color="color",
             get_radius=4,
@@ -125,6 +128,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
         pdk.Layer(
             "IconLayer",
             markers,
+            id="trip-markers",
             get_position="position",
             get_icon="icon",
             get_size=22,
@@ -186,6 +190,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
                 pdk.Layer(
                     "PathLayer",
                     paths,
+                    id="trip-bus-paths",
                     get_path="path",
                     get_color="color",
                     width_min_pixels=4,
@@ -197,6 +202,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
             pdk.Layer(
                 "PathLayer",
                 walks,
+                id="trip-walks",
                 get_path="path",
                 get_color=[197, 242, 103, 120],
                 width_min_pixels=2,
@@ -222,6 +228,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
                     }
                 ],
                 get_path="path",
+                id="live-bus-approach",
                 get_color=[37, 99, 235, 255],
                 width_min_pixels=5,
                 pickable=True,
@@ -250,16 +257,54 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
         default=0,
     )
     zoom = max(3, min(14, math.log2(0.09 / max(spread, 0.003)) + 10)) if bounds else 12
+    context = hashlib.sha256(
+        json.dumps(
+            {
+                "origin": origin,
+                "destination": destination,
+                "journey": (journey or {}).get("id"),
+                "legs": [
+                    {
+                        "trip": leg.get("tripId"),
+                        "route": leg.get("route"),
+                        "board": leg["boarding"].get("id"),
+                        "off": leg["alighting"].get("id"),
+                    }
+                    for leg in (
+                        (journey or {}).get("legs") or ([journey] if journey else [])
+                    )
+                ],
+            },
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()[:16]
+    camera = st.session_state.get("_leavenow_map_camera")
+    fit = st.button("Fit route", key="fit_route_" + context)
+    if not camera or camera["context"] != context or fit:
+        camera = {
+            "context": context,
+            "view": {
+                "longitude": center[0],
+                "latitude": center[1],
+                "zoom": zoom,
+                "pitch": 25,
+            },
+            "revision": (camera.get("revision", 0) + 1) if camera else 0,
+        }
+        st.session_state["_leavenow_map_camera"] = camera
     deck = pdk.Deck(
         layers=layers,
-        initial_view_state=pdk.ViewState(
-            longitude=center[0], latitude=center[1], zoom=zoom, pitch=25
-        ),
+        initial_view_state=pdk.ViewState(**camera["view"]),
         map_provider="carto",
         map_style="light" if light else "dark",
         tooltip={"text": "{label}\n{detail}"},
     )
-    st.pydeck_chart(deck, height=420)
+    st.pydeck_chart(
+        deck,
+        height=420,
+        key=f"route_map_{context}_{camera['revision']}",
+        on_select="rerun",
+    )
     if journey:
         st.caption(
             "Walking routes [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) · Short access links and times are estimates."

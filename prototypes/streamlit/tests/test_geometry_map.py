@@ -107,3 +107,32 @@ class GeometryMapTests(unittest.TestCase):
         self.assertEqual(approach.data[0]["path"], path)
         self.assertEqual(approach.get_color, [37, 99, 235, 255])
         self.assertEqual(layers[-1].type, "IconLayer")
+
+    def test_moving_bus_keeps_camera_until_fit_route_is_requested(self):
+        a = {"id": "a", "name": "Board", "lat": 29.64, "lon": -82.34}
+        b = {"id": "b", "name": "Off", "lat": 29.65, "lon": -82.32}
+        journey = {"id": "same-trip", "boarding": a, "alighting": b, "route": "20"}
+        bus = {"id": "1", "route": "20", "position": {**a, "updatedAt": 1795028400000}}
+        with patch("presentation.st.session_state", {}), patch(
+            "presentation.st.button", return_value=False
+        ) as fit, patch("presentation.st.pydeck_chart") as chart, patch(
+            "presentation.markup"
+        ), patch(
+            "presentation.st.caption"
+        ):
+            map_view(a, b, journey, bus=bus)
+            initial = chart.call_args.args[0].initial_view_state.to_json()
+            key = chart.call_args.kwargs["key"]
+            bus["position"]["lon"] = -82.40
+            bus["approachGeometry"] = {"path": [[-82.40, 29.64], [-82.34, 29.64]]}
+            map_view(a, b, journey, bus=bus)
+            self.assertEqual(
+                chart.call_args.args[0].initial_view_state.to_json(), initial
+            )
+            self.assertEqual(chart.call_args.kwargs["key"], key)
+            fit.return_value = True
+            map_view(a, b, journey, bus=bus)
+            self.assertNotEqual(
+                chart.call_args.args[0].initial_view_state.to_json(), initial
+            )
+            self.assertNotEqual(chart.call_args.kwargs["key"], key)
