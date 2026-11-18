@@ -193,6 +193,9 @@ export class BusTimeClient {
       .filter((p) => p && Array.isArray(p.pt))
       .map((p) => ({
         id: String(p.pid),
+        points: p.pt.map(s => ({sequence:Number(s.seq), lat:Number(s.lat), lon:Number(s.lon)}))
+          .filter(s => Number.isFinite(s.sequence) && inServiceArea(s))
+          .sort((a,b) => a.sequence-b.sequence),
         stops: p.pt
           .filter((s) => s.typ === "S")
           .map((s) => ({

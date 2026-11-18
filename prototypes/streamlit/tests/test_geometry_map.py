@@ -82,3 +82,28 @@ class GeometryMapTests(unittest.TestCase):
         self.assertIn("#ef4444", colors["Off"])
         self.assertIn("#2563eb", colors["Bus 2602 · Route 20"])
         self.assertNotEqual(markers[0]["icon"]["height"], markers[-1]["icon"]["height"])
+
+    def test_live_approach_line_matches_bus_and_preserves_marker_layer_order(self):
+        a = {"name": "Board", "lat": 29.64, "lon": -82.34}
+        b = {"name": "Off", "lat": 29.65, "lon": -82.32}
+        path = [[-82.35, 29.63], [-82.35, 29.64], [-82.34, 29.64]]
+        bus = {
+            "id": "1",
+            "route": "20",
+            "position": {**a, "updatedAt": 1795028400000},
+            "approachGeometry": {"path": path},
+        }
+        with patch("presentation.st.pydeck_chart") as chart, patch(
+            "presentation.markup"
+        ), patch("presentation.st.caption"):
+            map_view(a, b, {"boarding": a, "alighting": b, "route": "20"}, bus=bus)
+        layers = chart.call_args.args[0].layers
+        approach = next(
+            l
+            for l in layers
+            if l.type == "PathLayer"
+            and l.data[0]["label"] == "Live bus → boarding stop"
+        )
+        self.assertEqual(approach.data[0]["path"], path)
+        self.assertEqual(approach.get_color, [37, 99, 235, 255])
+        self.assertEqual(layers[-1].type, "IconLayer")

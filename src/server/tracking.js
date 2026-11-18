@@ -1,4 +1,5 @@
 import { agencyTime, fresh } from "./planner.js";
+import { busApproach } from "./approach.js";
 import { inServiceArea } from "./gainesville.js";
 
 export function patternServesJourney(vehicle, patterns, boarding, alighting) {
@@ -103,6 +104,17 @@ export async function trackBoarding(
         updatedAt: agencyTime(v.positionTimestamp),
       },
     });
+  }
+  for (const bus of buses.values()) {
+    const vehicle = upcoming.find((v) => String(v.id) === bus.id);
+    bus.approachGeometry =
+      vehicle && patternServesJourney(vehicle, patterns, stop, alighting)
+        ? busApproach(
+            vehicle,
+            patterns.find((p) => p.id === vehicle.patternId),
+            stop,
+          )
+        : null;
   }
   return {
     stop,

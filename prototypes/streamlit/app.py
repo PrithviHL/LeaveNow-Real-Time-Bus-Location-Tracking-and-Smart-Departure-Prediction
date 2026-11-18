@@ -534,7 +534,7 @@ def show_bus_tracking(trip, journey, leg, light):
     except ApiError as error:
         st.warning(str(error))
     map_view(trip["origin"], trip["destination"], journey, light=light, bus=bus)
-    st.caption("Blue bus = live GPS · Refreshes every 5s · RTS may update less often.")
+    st.caption("Blue bus + line → green boarding pin · Updates every 5s.")
 
 
 def show_results():

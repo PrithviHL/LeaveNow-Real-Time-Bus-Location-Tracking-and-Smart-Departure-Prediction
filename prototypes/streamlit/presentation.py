@@ -204,9 +204,30 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
             st.caption(
                 "Published route geometry is unavailable for one or more bus legs; their bus lines are hidden."
             )
+    approach = (bus or {}).get("approachGeometry") or {}
+    approach_path = approach.get("path") or []
+    if len(approach_path) >= 2:
+        layers.insert(
+            max(0, len(layers) - 2),
+            pdk.Layer(
+                "PathLayer",
+                [
+                    {
+                        "path": approach_path,
+                        "label": "Live bus → boarding stop",
+                        "detail": "Verified bus route · short GPS/stop connectors estimated",
+                    }
+                ],
+                get_path="path",
+                get_color=[37, 99, 235, 255],
+                width_min_pixels=5,
+                pickable=True,
+            ),
+        )
     bounds = (
         points
         + markers
+        + [{"position": p} for p in approach_path]
         + (
             [{"position": p} for row in paths + walks for p in row["path"]]
             if journey and origin and destination
