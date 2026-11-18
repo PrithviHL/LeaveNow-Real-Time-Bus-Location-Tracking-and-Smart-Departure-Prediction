@@ -261,6 +261,14 @@ def main():
                 "Live arrivals disabled: configure GAINESVILLE_RTS_API_KEY in the hosting secret settings.",
                 flush=True,
             )
+        if ui_env["LEAVENOW_API_CONFIGURED"] == "1":
+            try:
+                subprocess.run(
+                    ["node", "scripts/check-live-tracking.js"],
+                    cwd=ROOT, env=api_env, timeout=35, check=False,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                print("Bounded live tracking diagnostic did not complete.", flush=True)
         # Do not pass the RTS key to the public UI child process.
         api_env.pop("GAINESVILLE_RTS_API_KEY", None)
         os.environ.pop("GAINESVILLE_RTS_API_KEY", None)
