@@ -45,3 +45,39 @@ test("route tracking shares requests and obtains new positions after five second
   assert.equal(calls, 2);
   assert.notEqual(fresh[0].positionTimestamp, a[0].positionTimestamp);
 });
+
+// Gainesville BusTime uses zero-padded stop codes while its GTFS IDs do not.
+test("provider stop padding preserves GTFS identity for predictions and patterns", async () => {
+  const requests = [];
+  const client = new BusTimeClient("test", {
+    feed: "bustime",
+    fetcher: async (url) => {
+      requests.push(url);
+      return {
+        ok: true,
+        json: async () => ({
+          "bustime-response": url.pathname.endsWith("getpatterns")
+            ? {
+                ptr: [
+                  {
+                    pid: 1,
+                    pt: [
+                      { typ: "S", stpid: "0473", seq: 1, pdist: 100 },
+                      { typ: "S", stpid: "0171", seq: 2, pdist: 200 },
+                    ],
+                  },
+                ],
+              }
+            : { prd: [] },
+        }),
+      };
+    },
+  });
+  await client.predictions("473");
+  assert.equal(requests[0].searchParams.get("stpid"), "0473");
+  const patterns = await client.patterns("20");
+  assert.deepEqual(
+    patterns[0].stops.map((s) => s.id),
+    ["473", "171"],
+  );
+});

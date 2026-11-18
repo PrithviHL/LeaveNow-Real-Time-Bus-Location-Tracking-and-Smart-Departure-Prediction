@@ -40,10 +40,6 @@ try {
           ),
         }),
     );
-    if (route === "20") {
-      const raw = await client.request("getpatterns", {rt: route, ...(client.feed ? {rtpidatafeed:client.feed} : {})}, 300000);
-      console.log("Route20 stop identity sample: " + JSON.stringify((raw.ptr || []).flatMap(p => p.pt || []).filter(s => s.typ === "S").slice(0,8).map(s => ({id:s.stpid,name:s.stpnm,lat:s.lat,lon:s.lon}))));
-    }
     for (const vehicle of vehicles) {
       const pattern = patterns.find((p) => p.id === vehicle.patternId);
       const ahead = (pattern?.stops || []).filter(

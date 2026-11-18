@@ -135,7 +135,7 @@ export class BusTimeClient {
     const data = await this.request(
       "getpredictions",
       {
-        stpid: String(id),
+        stpid: /^\d{1,4}$/.test(String(id)) ? String(id).padStart(4, "0") : String(id),
         ...(rtpidatafeed ? { rtpidatafeed } : {}),
         unixTime: "true",
         tmres: "s",
@@ -196,7 +196,7 @@ export class BusTimeClient {
         stops: p.pt
           .filter((s) => s.typ === "S")
           .map((s) => ({
-            id: String(s.stpid),
+            id: /^\d+$/.test(String(s.stpid)) ? String(s.stpid).replace(/^0+(?=\d)/, "") : String(s.stpid),
             sequence: Number(s.seq),
             distance:
               s.pdist === undefined || s.pdist === null || s.pdist === ""

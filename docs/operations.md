@@ -62,3 +62,7 @@ The OSM pedestrian snapshot is bundled in the image, so walking searches need no
 ## Live tracking refresh
 
 The tracking fragment refreshes every five seconds by default; users can disable Auto-refresh live bus or refresh manually. Trip search is not rerun on each tracking tick. Vehicle polling is scoped to the selected leg’s route and cached/coalesced for five seconds; fleet diagnostics retain their 20-second cache, stop predictions 15 seconds, and route patterns five minutes. The process-wide 60-request/minute budget still applies. Five-second UI refresh does not guarantee five-second provider GPS or ETA updates. Different routes and stop pairs across many users can exhaust the budget; partial data warnings remain visible. Frequent map redraws may use more browser CPU/battery, especially on mobile.
+
+## BusTime stop identity
+
+Gainesville BusTime uses four-digit numeric stop codes (for example `0473`) while the GTFS stop ID is `473`. Prediction requests pad short numeric codes to four digits; pattern stop IDs remove numeric leading zeros for GTFS comparisons. Alphanumeric identifiers are preserved. This fixes false no-live-bus results without weakening ordered-stop, direction, or freshness checks. The bounded server-side startup diagnostic reports only public bus/stop metadata and verifies a real GPS-backed pair when service is available; it is not a permanent test timetable.
