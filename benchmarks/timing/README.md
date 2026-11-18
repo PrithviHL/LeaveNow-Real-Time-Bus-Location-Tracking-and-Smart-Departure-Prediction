@@ -1,5 +1,7 @@
 # Timing verification — November 18, 2026
 
+**Latest release:** 127 tests passed; the at-stop-policy rerun checked 120 searches / 2,428 candidates / 31 transfer candidates / 4,887 walking-leg instances with zero invariant failures. [Current metrics and scope](../../docs/project-metrics.md) · [Current raw run](at-stop-report.json) · [Metrics JSON](metrics.json). Earlier sections below retain the pre-policy audit evidence.
+
 This audit checks implementation correctness and live-data consistency. It **does not establish real-world arrival-time accuracy or guarantee every trip**. RTS forecasts can change; GPS, pedestrian mapping, closures and individual walking speed add uncertainty.
 
 ## Reproducible checks

@@ -104,6 +104,10 @@ docker compose up --build --wait
 
 Open [localhost:8501](http://localhost:8501). Authentication still needs its runtime secrets file; see the container and OAuth guides. The public Render profile uses one supervised Docker container instead. Kubernetes manifests and a kind workflow are provided for local development/CI; Render is **not** running this app on a Kubernetes cluster you manage. [Container architecture, secrets, commands, and validation limits](docs/streamlit-containers.md).
 
+## Latest verified metrics — November 18, 2026
+
+**127 tests passed** (77 Node + 50 Python). A 120-case current-policy feed run checked **2,428 candidate journeys**, including 31 transfer candidates and 4,887 walking-leg instances, with zero timing-invariant failures. Additional checks cover 1,296 walking-oracle pairs, 128 prediction-evidence combinations and 600 transfer-delay cases. These are calculation checks, not measured real-world prediction accuracy. [All metrics, version scope and raw evidence](docs/project-metrics.md).
+
 ## Validation
 
 ```sh

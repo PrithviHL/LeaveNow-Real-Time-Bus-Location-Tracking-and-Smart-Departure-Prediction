@@ -55,3 +55,7 @@ The November 18, 2026 rollout passed 58 Node and 36 Python tests, plus both remo
 ## Rigorous timing audit
 
 See [the November 18 timing audit](../benchmarks/timing/README.md) for independent walking-oracle checks, delayed-transfer stress cases, current-feed search invariants, reproduced bugs and fixes, and the limits of live forecast validation. The report deliberately distinguishes calculation correctness, snapshot consistency, and real-world prediction error; it does not claim guaranteed arrivals or measured walking accuracy.
+
+## Current metrics snapshot
+
+The at-stop release passed **127 tests (77 Node + 50 Python)** and both remote workflows. Its 120-case real-feed rerun validated 2,428 candidates, including 31 transfer candidates and 4,887 routed walking-leg instances, with zero invariant failures. [Versioned metrics, raw artifacts and scope](project-metrics.md) distinguish these from the earlier 122-test audit and unmeasured real-world forecast accuracy.
