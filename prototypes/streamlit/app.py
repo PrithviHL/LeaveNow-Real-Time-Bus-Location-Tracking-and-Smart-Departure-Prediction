@@ -512,17 +512,6 @@ def show_bus_tracking(trip, journey, leg, light):
         )
         if selected:
             bus = buses[selected]
-            if bus.get("arrivalAt"):
-                minutes = max(
-                    0, math.ceil((bus["arrivalAt"] - time.time() * 1000) / 60000)
-                )
-                st.metric(
-                    "Bus reaches your boarding stop",
-                    "Due now" if minutes == 0 else f"{minutes} min",
-                    clock_time(bus["arrivalAt"]),
-                )
-            else:
-                st.info("Direction verified · Live GPS · Stop ETA unavailable.")
             if not bus.get("position"):
                 st.info("ETA available. Waiting for fresh GPS.")
         elif not buses:
@@ -533,6 +522,18 @@ def show_bus_tracking(trip, journey, leg, light):
             st.warning("Some live tracking data is temporarily unavailable.")
     except ApiError as error:
         st.warning(str(error))
+    tracked = {
+        **journey,
+        "route": leg["route"],
+        "headsign": leg.get("headsign", journey["headsign"]),
+    }
+    if leg["boarding"]["id"] != journey["boarding"]["id"]:
+        tracked["walkMinutes"] = (journey.get("connection") or {}).get("walkMinutes", 0)
+    ticket(tracked, bus=bus)
+    if bus:
+        st.caption(
+            "Selected bus boarding estimate. Planned destination and transfer times below are not recalculated for this bus."
+        )
     map_view(trip["origin"], trip["destination"], journey, light=light, bus=bus)
     st.caption("Blue bus + line → green boarding pin · Updates every 5s.")
 
@@ -605,13 +606,6 @@ def show_results():
         key="journey_choice",
     )
     journey = journeys[selected]
-    label = journey.get("timingLabel", "Live")
-    st.caption(
-        f"{label} · {journey.get('transfers', 0)} transfer(s) · arrive at destination {clock_time(journey['destinationAt'])}"
-    )
-    ticket(journey)
-    walk, arrive = st.columns(2)
-    walk.metric("Estimated walk to stop", f"{journey['walkMinutes']} min")
     if any(
         part.get("walkSource") == "estimate"
         for part in [
@@ -620,12 +614,7 @@ def show_results():
             journey.get("connection") or {},
         ]
     ):
-        st.caption(
-            "Some walking paths are unavailable; those times are conservative estimates."
-        )
-    arrive.metric("Reach destination", clock_time(journey["destinationAt"]))
-    with st.expander("Trip details"):
-        timeline(journey)
+        st.caption("Some walking times use conservative estimates.")
     legs = journey.get("legs") or [journey]
     leg_index = (
         st.selectbox(
@@ -637,6 +626,14 @@ def show_results():
         else 0
     )
     show_bus_tracking(trip, journey, legs[leg_index], light_map)
+    with st.expander("Planned journey details · timetable / verified trip updates"):
+        st.caption(
+            f"Planned departure {clock_time(journey['departsAt'])} · destination {clock_time(journey['destinationAt'])} · {journey.get('timingLabel', 'Scheduled')}"
+        )
+        st.caption(
+            "A separately selected live bus may be a different trip. These destination and connection times belong to the planned journey."
+        )
+        timeline(journey)
     st.caption("Blue/purple = bus route · Green = walking path.")
     st.link_button(
         "Walking directions to your boarding stop ↗",

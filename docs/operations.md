@@ -74,3 +74,7 @@ Green pins show the starting location and boarding stop; red pins show the desti
 The selected blue bus has a matching blue approach path to its green boarding pin when its live pattern supplies usable geometry. Provider pattern distance bounds the GPS projection to the current stop interval; the path ends at the upcoming boarding stop. GPS gaps over 100 m or boarding offsets over 80 m hide the approach line. Short connectors are estimates, and the line is the current published pattern, not a recorded vehicle trail. When the origin is an address, the green walking path still leads to the boarding stop. Missing geometry never produces a fabricated straight bus line.
 
 Stop circles use pixel units capped at 5 px radius; endpoint/bus icons use 22 px sizing capped at 24 px. Marker size stays bounded while zooming rather than expanding with map distance units.
+
+## Planned trip versus selected live bus
+
+The primary ticket is inside the five-second tracking fragment. Selecting a bus changes it to that bus’s live boarding ETA and recalculates leave-by from the applicable walk plus boarding buffer. GPS-only selections show no countdown. Without a selected bus, scheduled departures are explicitly labelled. Planned destination/transfer times stay in a collapsed detail section: selecting a route-compatible bus does not establish that it is the same GTFS trip or that timetable arrival/connection times remain valid. The app does not substitute the boarding ETA into a fabricated destination ETA.

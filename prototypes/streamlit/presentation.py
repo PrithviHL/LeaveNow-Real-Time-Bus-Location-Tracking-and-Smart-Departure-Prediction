@@ -269,14 +269,51 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
     )
 
 
-def ticket(journey):
-    label = escape(journey.get("timingLabel", "Live"))
+def ticket(journey, bus=None):
+    live = bus is not None
+    departure = bus.get("arrivalAt") if live else journey["departsAt"]
+    label = escape(
+        "Live boarding ETA"
+        if live and departure
+        else (
+            "Live GPS · no boarding ETA"
+            if live
+            else journey.get("timingLabel", "Scheduled")
+        )
+    )
     transfer_label = "Direct" if not journey.get("transfers", 0) else "1 transfer"
-    minutes = max(0, math.ceil((journey["departsAt"] / 1000 - time.time()) / 60))
-    countdown = f"{minutes} min" if minutes <= 120 else clock_time(journey["departsAt"])
-    countdown_caption = "until your bus" if minutes <= 120 else "departure time"
+    scheduled = not live and journey.get("timingLabel", "Scheduled") == "Scheduled"
+    minutes = (
+        max(0, math.ceil((departure / 1000 - time.time()) / 60)) if departure else None
+    )
+    countdown = (
+        (f"{minutes} min" if minutes <= 120 else clock_time(departure))
+        if departure
+        else "GPS only"
+    )
+    countdown_caption = (
+        "until selected bus reaches this stop"
+        if live and departure
+        else (
+            "boarding ETA unavailable"
+            if live
+            else "until scheduled departure" if scheduled else "until planned departure"
+        )
+    )
+    leave_at = departure - (journey["walkMinutes"] + 2) * 60000 if departure else None
+    leave_label = (
+        ("Leave by " + clock_time(leave_at))
+        if leave_at
+        else "Waiting for RTS arrival prediction"
+    )
+    warning = ""
+    if live and leave_at and leave_at < time.time() * 1000:
+        warning = '<p class="ln-kicker">Walking time + boarding buffer may exceed the available time.</p>'
+    headsign = (
+        bus.get("destination") or journey["headsign"] if live else journey["headsign"]
+    )
     markup(
-        f"""<div class="ln-ticket"><div class="ln-ticket-top"><span class="ln-route">RTS {escape(str(journey["route"]))}</span><span class="ln-ticket-status">{label} · {transfer_label}</span></div><h2>{escape(journey["headsign"])}</h2><div class="ln-countdown">{countdown}<span>{countdown_caption}</span></div><div class="ln-leave"><b>↗ Leave by {clock_time(journey["leaveAt"])}</b><span>{journey["walkMinutes"]} min walk + 2 min boarding buffer</span></div></div>"""
+        f"""<div class="ln-ticket"><div class="ln-ticket-top"><span class="ln-route">RTS {escape(str(journey['route']))}</span><span class="ln-ticket-status">{label} · {transfer_label}</span></div><h2>{escape(headsign)}</h2><div class="ln-countdown">{countdown}<span>{countdown_caption}</span></div><div class="ln-leave"><b>↗ {escape(leave_label)}</b><span>{journey['walkMinutes']} min walk + 2 min boarding buffer</span></div>{warning}</div>"""
     )
 
 
