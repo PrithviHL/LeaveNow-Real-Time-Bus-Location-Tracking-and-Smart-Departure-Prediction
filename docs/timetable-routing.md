@@ -74,7 +74,7 @@ Transfer search orders first legs by their best possible score and keeps a conse
 
 ### Published route shapes
 
-The importer retains `shapes.txt`, trip `shape_id`, and stop-time `shape_dist_traveled`. Returned journey legs include geometry only for the boarding-to-alighting segment, using distance interpolation to handle loops and repeated stops. Missing or invalid geometry produces no bus line rather than a fabricated straight route. Blue/purple bus lines represent the published schedule path, not actual historical GPS travel or temporary detours. Green walking paths follow mapped OSM pedestrian links when available; endpoint connectors and labelled fallback links remain estimates. The live pink marker stays at the reported GPS position. No Google Maps API or billing is required.
+The importer retains `shapes.txt`, trip `shape_id`, and stop-time `shape_dist_traveled`. Returned journey legs include geometry only for the boarding-to-alighting segment, using distance interpolation to handle loops and repeated stops. Missing or invalid geometry produces no bus line rather than a fabricated straight route. Blue/purple bus lines represent the published schedule path, not actual historical GPS travel or temporary detours. Green walking paths follow mapped OSM pedestrian links when available; endpoint connectors and labelled fallback links remain estimates. The live blue bus marker stays at the reported GPS position. No Google Maps API or billing is required.
 
 ### Best journey recommendations
 

@@ -58,3 +58,27 @@ class GeometryMapTests(unittest.TestCase):
                 for call in caption.call_args_list
             )
         )
+
+    def test_endpoint_pins_remain_above_coincident_stops_and_bus_is_distinct(self):
+        from urllib.parse import unquote
+
+        a = {"name": "Board", "lat": 29.64, "lon": -82.34}
+        b = {"name": "Off", "lat": 29.65, "lon": -82.32}
+        bus = {
+            "id": "2602",
+            "route": "20",
+            "position": {**a, "updatedAt": 1795028400000},
+        }
+        with patch("presentation.st.pydeck_chart") as chart, patch(
+            "presentation.markup"
+        ), patch("presentation.st.caption"):
+            map_view(a, b, {"boarding": a, "alighting": b, "route": "20"}, bus=bus)
+        layers = chart.call_args.args[0].layers
+        self.assertEqual(layers[-1].type, "IconLayer")
+        markers = layers[-1].data
+        colors = {m["label"]: unquote(m["icon"]["url"]) for m in markers}
+        self.assertIn("#22c55e", colors["Your start"])
+        self.assertIn("#ef4444", colors["Your destination"])
+        self.assertIn("#ef4444", colors["Off"])
+        self.assertIn("#2563eb", colors["Bus 2602 · Route 20"])
+        self.assertNotEqual(markers[0]["icon"]["height"], markers[-1]["icon"]["height"])

@@ -66,3 +66,7 @@ The tracking fragment refreshes every five seconds by default; users can disable
 ## BusTime stop identity
 
 Gainesville BusTime uses four-digit numeric stop codes (for example `0473`) while the GTFS stop ID is `473`. Prediction requests pad short numeric codes to four digits; pattern stop IDs remove numeric leading zeros for GTFS comparisons. Alphanumeric identifiers are preserved. This fixes false no-live-bus results without weakening ordered-stop, direction, or freshness checks. The bounded server-side startup diagnostic reports only public bus/stop metadata and verifies a real GPS-backed pair when service is available; it is not a permanent test timetable.
+
+## Map markers
+
+Green pins show the starting location and boarding stop; red pins show the destination and final get-off stop. The live vehicle uses a blue bus icon, distinct from endpoint pins. Endpoint icons render above route lines and stop circles so a coincident bus stop does not hide the start/destination color. Icons are bundled inline SVGs and need no external image service.

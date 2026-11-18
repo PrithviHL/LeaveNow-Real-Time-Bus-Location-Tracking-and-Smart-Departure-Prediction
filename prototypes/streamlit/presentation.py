@@ -2,6 +2,7 @@
 
 from html import escape
 from pathlib import Path
+from urllib.parse import quote
 import math
 import time
 
@@ -18,19 +19,39 @@ def theme():
     markup(Path(__file__).with_name("theme.css").read_text())
 
 
+def map_icon(kind, color):
+    """Inline SVG markers need no external icon service or API key."""
+    if kind == "bus":
+        svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect x="2" y="2" width="36" height="36" rx="10" fill="{color}" stroke="white" stroke-width="2"/><rect x="11" y="8" width="18" height="23" rx="4" fill="white"/><rect x="14" y="11" width="12" height="9" rx="1" fill="{color}"/><circle cx="15" cy="26" r="2" fill="{color}"/><circle cx="25" cy="26" r="2" fill="{color}"/><path d="M13 32v2m14-2v2" stroke="white" stroke-width="3"/></svg>'
+        return {
+            "url": "data:image/svg+xml," + quote(svg, safe=""),
+            "width": 40,
+            "height": 40,
+            "anchorY": 20,
+        }
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="32" height="44"><path d="M16 42C12 35 2 25 2 16a14 14 0 1 1 28 0c0 9-10 19-14 26Z" fill="{color}" stroke="white" stroke-width="2"/><circle cx="16" cy="16" r="5" fill="white"/></svg>'
+    return {
+        "url": "data:image/svg+xml," + quote(svg, safe=""),
+        "width": 32,
+        "height": 44,
+        "anchorY": 44,
+    }
+
+
 def map_view(origin=None, destination=None, journey=None, light=False, bus=None):
     points = []
+    markers = []
     for point, label, color in [
-        (origin, "Your start", [197, 242, 103]),
-        (destination, "Your destination", [255, 178, 118]),
+        (origin, "Your start", "#22c55e"),
+        (destination, "Your destination", "#ef4444"),
     ]:
         if point:
-            points.append(
+            markers.append(
                 {
                     "position": [point["lon"], point["lat"]],
                     "label": label,
                     "detail": "Trip location",
-                    "color": color,
+                    "icon": map_icon("pin", color),
                 }
             )
     if journey and journey.get("legs"):
@@ -62,15 +83,30 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
             )
     if bus and bus.get("position"):
         position = bus["position"]
-        points.append(
+        markers.append(
             {
                 "position": [position["lon"], position["lat"]],
                 "label": f"Bus {bus['id']} · Route {bus['route']}",
                 "detail": "Live position · updated "
                 + clock_time(position["updatedAt"]),
-                "color": [255, 85, 140],
+                "icon": map_icon("bus", "#2563eb"),
             }
         )
+    if journey:
+        legs = journey.get("legs") or [journey]
+        for stop, label, color in [
+            (legs[0]["boarding"], "Board here", "#22c55e"),
+            (legs[-1]["alighting"], "Get off here", "#ef4444"),
+        ]:
+            markers.insert(
+                0,
+                {
+                    "position": [stop["lon"], stop["lat"]],
+                    "label": stop["name"],
+                    "detail": label,
+                    "icon": map_icon("pin", color),
+                },
+            )
     layers = [
         pdk.Layer(
             "ScatterplotLayer",
@@ -83,7 +119,18 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
             stroked=True,
             get_line_color=[255, 255, 255],
             line_width_min_pixels=2,
-        )
+        ),
+        pdk.Layer(
+            "IconLayer",
+            markers,
+            get_position="position",
+            get_icon="icon",
+            get_size=38,
+            size_units="pixels",
+            pickable=True,
+            billboard=True,
+            parameters={"depthTest": False},
+        ),
     ]
     if journey and origin and destination:
         legs = journey.get("legs") or [journey]
@@ -157,14 +204,18 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
             st.caption(
                 "Published route geometry is unavailable for one or more bus legs; their bus lines are hidden."
             )
-    bounds = points + (
-        [{"position": p} for row in paths + walks for p in row["path"]]
-        if journey and origin and destination
-        else []
+    bounds = (
+        points
+        + markers
+        + (
+            [{"position": p} for row in paths + walks for p in row["path"]]
+            if journey and origin and destination
+            else []
+        )
     )
     center = (
         [sum(p["position"][i] for p in bounds) / len(bounds) for i in [0, 1]]
-        if points
+        if bounds
         else [-82.3394, 29.6516]
     )
     spread = max(
@@ -174,7 +225,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
         ),
         default=0,
     )
-    zoom = max(3, min(14, math.log2(0.09 / max(spread, 0.003)) + 10)) if points else 12
+    zoom = max(3, min(14, math.log2(0.09 / max(spread, 0.003)) + 10)) if bounds else 12
     deck = pdk.Deck(
         layers=layers,
         initial_view_state=pdk.ViewState(
@@ -190,7 +241,7 @@ def map_view(origin=None, destination=None, journey=None, light=False, bus=None)
             "Walking routes [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) · Short access links and times are estimates."
         )
     markup(
-        '<div class="ln-legend"><span><i class="you"></i>Your start</span><span><i class="dest"></i>Destination</span><span><i class="stop"></i>Bus stops</span></div>'
+        '<div class="ln-legend"><span><i class="you"></i>Start / boarding</span><span><i class="dest"></i>Destination / get off</span><span><i class="bus"></i>Live bus</span></div>'
     )
 
 
