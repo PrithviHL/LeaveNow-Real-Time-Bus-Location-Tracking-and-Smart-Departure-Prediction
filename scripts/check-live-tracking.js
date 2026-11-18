@@ -46,7 +46,7 @@ try {
         (s) => s.distance >= vehicle.patternDistance && stops.has(s.id),
       );
       if (ahead.length < 2) continue;
-      const boarding = stops.get(ahead[0].id),
+      const boarding = stops.get(ahead[Math.min(3, ahead.length - 2)].id),
         alighting = stops.get(ahead.at(-1).id);
       if (!patternServesJourney(vehicle, patterns, boarding, alighting))
         continue;
@@ -71,6 +71,7 @@ try {
             buses: result.buses.map((b) => ({
               id: b.id,
               gps: Boolean(b.position),
+              approachPath: Boolean(b.approachGeometry?.path?.length),
               eta: Boolean(b.arrivalAt),
             })),
             checkedAt: new Date().toISOString(),
