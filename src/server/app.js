@@ -106,6 +106,29 @@ export function handler(
         const stop = schedule?.stops.find((s) => s.id === stopId);
         const alightId = url.searchParams.get("alight") || "";
         const alighting = schedule?.stops.find((s) => s.id === alightId);
+        const tripId = url.searchParams.get("trip") || "";
+        const date = url.searchParams.get("date") || "";
+        if (tripId) {
+          const trip = schedule?.data.trips?.find((t) => t.id === tripId);
+          const a =
+            trip?.stops.findIndex((s) => schedule.stops[s[0]].id === stopId) ??
+            -1;
+          const b =
+            trip?.stops.findIndex(
+              (s, i) => i > a && schedule.stops[s[0]].id === alightId,
+            ) ?? -1;
+          if (
+            !trip ||
+            String(schedule.data.routes[trip.route]?.short) !== route ||
+            a < 0 ||
+            b <= a ||
+            (date && !/^\d{8}$/.test(date))
+          )
+            return json(400, {
+              error: "Choose a valid journey trip and its ordered stops.",
+            });
+        }
+
         if (
           !stop ||
           !alighting ||
@@ -124,7 +147,14 @@ export function handler(
           });
         return json(
           200,
-          await trackBoarding(client, stop, route, Date.now(), alighting),
+          await trackBoarding(
+            client,
+            stop,
+            route,
+            Date.now(),
+            alighting,
+            tripId ? { id: tripId, date } : null,
+          ),
         );
       }
       if (req.method === "GET" && url.pathname === "/api/vehicles") {

@@ -483,56 +483,54 @@ def show_bus_tracking(trip, journey, leg, light):
     st.button("Refresh bus location", key="refresh_bus_location")
     bus = None
     try:
-        data = api_request(
-            "/api/tracking?"
-            + urlencode(
-                {
-                    "stop": leg["boarding"]["id"],
-                    "alight": leg["alighting"]["id"],
-                    "route": leg["route"],
-                }
+        if leg.get("tripId"):
+            data = api_request(
+                "/api/tracking?"
+                + urlencode(
+                    {
+                        "stop": leg["boarding"]["id"],
+                        "alight": leg["alighting"]["id"],
+                        "route": leg["route"],
+                        "trip": leg["tripId"],
+                        "date": (
+                            str(leg.get("instance", "")).split(":")[0]
+                            if leg.get("instance")
+                            else ""
+                        ),
+                    }
+                )
             )
-        )
-        buses = {b["id"]: b for b in data.get("buses", [])}
-        key = "tracked_bus_" + str(leg["boarding"]["id"]) + "_" + str(leg["route"])
-        if st.session_state.get(key) not in buses:
-            st.session_state.pop(key, None)
-        selected = st.selectbox(
-            "Choose a bus toward your destination",
-            list(buses),
-            index=None,
-            format_func=lambda id: f"Bus {id} · {buses[id]['destination']} · "
-            + (
-                f"arrives {clock_time(buses[id]['arrivalAt'])}"
-                if buses[id].get("arrivalAt")
-                else "GPS only · no ETA"
-            ),
-            key=key,
-            placeholder="Select a live bus",
-        )
-        if selected:
-            bus = buses[selected]
+            matches = [
+                b for b in data.get("buses", []) if b.get("tripId") == leg["tripId"]
+            ]
+            bus = matches[0] if len(matches) == 1 else None
+            if data.get("partial"):
+                st.warning("Some live tracking data is temporarily unavailable.")
+        if bus:
+            st.caption(f"Bus {bus['id']} · assigned to this journey")
             if not bus.get("position"):
-                st.info("ETA available. Waiting for fresh GPS.")
-        elif not buses:
-            st.info(
-                "No live bus verified in this direction. Scheduled trips remain available."
-            )
-        if data.get("partial"):
-            st.warning("Some live tracking data is temporarily unavailable.")
+                st.info("Trip ETA available. Waiting for fresh GPS.")
+        else:
+            st.info("Live tracking unavailable for this trip.")
     except ApiError as error:
         st.warning(str(error))
     tracked = {
         **journey,
         "route": leg["route"],
         "headsign": leg.get("headsign", journey["headsign"]),
+        "departsAt": leg["departsAt"],
+        "timingLabel": {
+            "live": "Live",
+            "mixed": "Live + Scheduled",
+            "scheduled": "Scheduled",
+        }.get(leg.get("timingSource", "scheduled"), "Scheduled"),
     }
     if leg["boarding"]["id"] != journey["boarding"]["id"]:
         tracked["walkMinutes"] = (journey.get("connection") or {}).get("walkMinutes", 0)
     ticket(tracked, bus=bus)
     if bus:
         st.caption(
-            "Selected bus boarding estimate. Planned destination and transfer times below are not recalculated for this bus."
+            "Live boarding estimate for this trip. Destination and connection times below were last checked with the journey plan."
         )
     map_view(trip["origin"], trip["destination"], journey, light=light, bus=bus)
     st.caption("Blue bus + line → green boarding pin · Updates every 5s.")
@@ -601,7 +599,7 @@ def show_results():
     selected = st.selectbox(
         "Journey options",
         range(len(journeys)),
-        format_func=lambda i: f"{journeys[i].get('recommendation', 'Recommended' if i == 0 else 'Alternative')} · Route {journeys[i]['route']} · {clock_time(journeys[i]['departsAt'])} · "
+        format_func=lambda i: f"{journeys[i].get('recommendation', 'Recommended' if i == 0 else 'Alternative')} · Route {journeys[i]['route']} · planned {clock_time(journeys[i]['departsAt'])} · "
         + ("Direct" if not journeys[i].get("transfers", 0) else "1 transfer"),
         key="journey_choice",
     )
@@ -631,7 +629,7 @@ def show_results():
             f"Planned departure {clock_time(journey['departsAt'])} · destination {clock_time(journey['destinationAt'])} · {journey.get('timingLabel', 'Scheduled')}"
         )
         st.caption(
-            "A separately selected live bus may be a different trip. These destination and connection times belong to the planned journey."
+            "Live tracking follows the selected journey leg. Destination and connection times update when you refresh arrivals."
         )
         timeline(journey)
     st.caption("Blue/purple = bus route · Green = walking path.")

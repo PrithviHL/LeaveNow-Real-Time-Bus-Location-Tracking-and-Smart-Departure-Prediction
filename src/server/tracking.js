@@ -1,4 +1,5 @@
 import { agencyTime, fresh } from "./planner.js";
+import { serviceDate } from "./schedule.js";
 import { busApproach } from "./approach.js";
 import { inServiceArea } from "./gainesville.js";
 
@@ -30,8 +31,12 @@ export async function trackBoarding(
   route,
   now = Date.now(),
   alighting = null,
+  selectedTrip = null,
 ) {
-  if (!alighting)
+  if (
+    !alighting ||
+    (selectedTrip?.date && selectedTrip.date !== serviceDate(now))
+  )
     return { stop, route, checkedAt: now, buses: [], partial: false };
   const results = await Promise.allSettled([
     client.predictions(stop.code || stop.id),
@@ -43,12 +48,19 @@ export async function trackBoarding(
     r.status === "fulfilled" ? r.value : [],
   );
   const validPrediction = (p) =>
+    (!selectedTrip || String(p.ExternalTripId || "") === selectedTrip.id) &&
     String(p.RouteId) === route &&
     p.VehicleId &&
     fresh(p, now) &&
     Number.isFinite(agencyTime(p.ETA)) &&
     agencyTime(p.ETA) >= now;
   const validVehicle = (v) =>
+    Number.isFinite(agencyTime(v.positionTimestamp)) &&
+    (!selectedTrip ||
+      (String(v.tripId || "") === selectedTrip.id &&
+        (!selectedTrip.date ||
+          (v.serviceDate || serviceDate(agencyTime(v.positionTimestamp))) ===
+            selectedTrip.date))) &&
     String(v.route) === route &&
     v.id &&
     inServiceArea(v) &&
@@ -77,6 +89,7 @@ export async function trackBoarding(
       destination: p.Destination || p.RouteDir || "",
       arrivalAt: agencyTime(p.ETA),
       predictionAt: agencyTime(p.Timestamp),
+      tripId: selectedTrip?.id || null,
       directionVerified: true,
       position: v
         ? { lat: v.lat, lon: v.lon, updatedAt: agencyTime(v.positionTimestamp) }
@@ -97,6 +110,7 @@ export async function trackBoarding(
       destination: v.label || alighting.name,
       arrivalAt: null,
       predictionAt: null,
+      tripId: selectedTrip?.id || null,
       directionVerified: true,
       position: {
         lat: v.lat,
@@ -121,6 +135,7 @@ export async function trackBoarding(
     alighting,
     route,
     checkedAt: now,
+    tripId: selectedTrip?.id || null,
     buses: [...buses.values()].sort(
       (a, b) => (a.arrivalAt ?? Infinity) - (b.arrivalAt ?? Infinity),
     ),

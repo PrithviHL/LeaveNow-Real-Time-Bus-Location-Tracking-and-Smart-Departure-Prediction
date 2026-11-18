@@ -75,6 +75,8 @@ The selected blue bus has a matching blue approach path to its green boarding pi
 
 Stop circles use pixel units capped at 5 px radius; endpoint/bus icons use 22 px sizing capped at 24 px. Marker size stays bounded while zooming rather than expanding with map distance units.
 
-## Planned trip versus selected live bus
+## Journey-bound live tracking
 
-The primary ticket is inside the five-second tracking fragment. Selecting a bus changes it to that bus’s live boarding ETA and recalculates leave-by from the applicable walk plus boarding buffer. GPS-only selections show no countdown. Without a selected bus, scheduled departures are explicitly labelled. Planned destination/transfer times stay in a collapsed detail section: selecting a route-compatible bus does not establish that it is the same GTFS trip or that timetable arrival/connection times remain valid. The app does not substitute the boarding ETA into a fabricated destination ETA.
+Selecting a Journey option automatically tracks its exact GTFS trip; there is no separate bus picker. Transfer journeys retain a leg selector, and each leg can independently have live GPS, prediction-only data, or no assignment. The API matches GTFS trip IDs from BusTime `origtatripno`/`tatripid`; a same-route bus without the exact assignment is excluded. Fresh GPS also requires a matching vehicle service date (or position date when absent). Non-current service-date queries conservatively return no tracking rather than show another day's repeated trip ID.
+
+The primary ticket refreshes inside the five-second tracking fragment. A matched bus uses its boarding ETA and recalculates leave-by from walking plus the boarding buffer; GPS-only data never borrows a scheduled countdown. Unmatched trips show **Live tracking unavailable for this trip** and keep clearly labelled planned times. Journey-option departure times are labelled planned. Destination and connection times remain in a collapsed details section, last checked by Refresh arrivals; a boarding update alone does not recalculate them or guarantee a connection. Conflicting multiple vehicle assignments are not selected arbitrarily.

@@ -145,3 +145,46 @@ test("tracking endpoint requires destination context", async () => {
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("selected trip never substitutes another same-route vehicle or prediction", async () => {
+  const c = client(
+    [
+      { ...vehicle("right"), tripId: "selected" },
+      { ...vehicle("wrong"), tripId: "other" },
+      vehicle("unknown"),
+    ],
+    [{ ...pred("wrong", "other"), ExternalTripId: "other" }],
+  );
+  const result = await trackBoarding(c, stop, "17", now, end, {
+    id: "selected",
+  });
+  assert.deepEqual(
+    result.buses.map((b) => b.id),
+    ["right"],
+  );
+  assert.equal(result.buses[0].tripId, "selected");
+  const future = await trackBoarding(c, stop, "17", now, end, {
+    id: "selected",
+    date: "20261117",
+  });
+  assert.deepEqual(future.buses, []);
+});
+
+test("exact-trip predictions can show ETA while unrelated GPS stays hidden", async () => {
+  const c = client(
+    [{ ...vehicle("same-bus"), tripId: "other" }],
+    [{ ...pred("same-bus", "selected"), ExternalTripId: "selected" }],
+    [
+      {
+        ...pred("same-bus", "selected", now + 900000),
+        ExternalTripId: "selected",
+      },
+    ],
+  );
+  const result = await trackBoarding(c, stop, "17", now, end, {
+    id: "selected",
+  });
+  assert.equal(result.buses.length, 1);
+  assert.equal(result.buses[0].position, null);
+  assert.equal(result.buses[0].arrivalAt, now + 300000);
+});

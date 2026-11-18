@@ -244,6 +244,8 @@ export class BusTimeClient {
         id: String(v.vid),
         route: String(v.rt),
         label: String(v.des || ""),
+        tripId: [v.origtatripno, v.tatripid].map(String).find(t => this.tripIds.has(t)) || "",
+        serviceDate: String(v.stsd || "").replaceAll("-", ""),
         patternId: String(v.pid ?? ""),
         patternDistance:
           v.pdist === undefined || v.pdist === null || v.pdist === ""

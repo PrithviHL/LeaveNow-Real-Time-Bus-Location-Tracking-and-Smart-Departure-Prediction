@@ -11,6 +11,7 @@ const data = JSON.parse(
 const stops = new Map(data.stops.map((s) => [String(s.code || s.id), s]));
 const client = new BusTimeClient(process.env.GAINESVILLE_RTS_API_KEY, {
   feed: process.env.GAINESVILLE_RTS_FEED || "",
+  schedule: { data, stops: data.stops },
   requestsPerMinute: 10,
 });
 try {
@@ -26,6 +27,7 @@ try {
           route,
           vehicles: vehicles.length,
           patterns: patterns.length,
+          assignedTrips: vehicles.filter((v) => v.tripId).length,
           patternStops: patterns.reduce((n, p) => n + p.stops.length, 0),
           freshVehicles: vehicles.filter(
             (v) =>
@@ -41,6 +43,7 @@ try {
         }),
     );
     for (const vehicle of vehicles) {
+      if (!vehicle.tripId) continue;
       const pattern = patterns.find((p) => p.id === vehicle.patternId);
       const ahead = (pattern?.stops || []).filter(
         (s) => s.distance >= vehicle.patternDistance && stops.has(s.id),
@@ -56,6 +59,15 @@ try {
             stop: boarding.id,
             alight: alighting.id,
             route,
+            trip: vehicle.tripId,
+            date: new Intl.DateTimeFormat("en-CA", {
+              timeZone: "America/New_York",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            })
+              .format(new Date())
+              .replaceAll("-", ""),
           }),
         { signal: AbortSignal.timeout(20000) },
       );

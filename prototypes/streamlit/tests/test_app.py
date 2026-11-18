@@ -34,6 +34,7 @@ def trip_fixture():
         "journeys": [
             {
                 "route": "10",
+                "tripId": "selected-trip",
                 "boarding": boarding,
                 "alighting": alighting,
                 "departsAt": now + 900000,
@@ -222,6 +223,7 @@ class AppTests(unittest.TestCase):
                     "buses": [
                         {
                             "id": "901",
+                            "tripId": "selected-trip",
                             "route": "10",
                             "destination": "Downtown",
                             "arrivalAt": now + 300000,
@@ -234,15 +236,21 @@ class AppTests(unittest.TestCase):
         with patch("client.api_request", side_effect=reply) as request:
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
-            selector = next(
-                s
-                for s in app.selectbox
-                if s.label == "Choose a bus toward your destination"
+            self.assertFalse(
+                any(
+                    s.label == "Choose a bus toward your destination"
+                    for s in app.selectbox
+                )
             )
-            selector.set_value("901").run()
+            self.assertTrue(
+                any("trip=selected-trip" in c.args[0] for c in request.call_args_list)
+            )
             self.assertFalse(app.exception)
             self.assertTrue(
-                any(m.label == "Bus reaches your boarding stop" for m in app.metric)
+                any(
+                    "until selected bus reaches this stop" in m.value
+                    for m in app.markdown
+                )
             )
             self.assertEqual(
                 sum(c.args[0] == "/api/plan" for c in request.call_args_list), 1
@@ -257,6 +265,7 @@ class AppTests(unittest.TestCase):
                     "buses": [
                         {
                             "id": "902",
+                            "tripId": "selected-trip",
                             "route": "10",
                             "destination": "Downtown",
                             "arrivalAt": None,
@@ -269,23 +278,22 @@ class AppTests(unittest.TestCase):
         with patch("client.api_request", side_effect=reply):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
-            next(
-                s
-                for s in app.selectbox
-                if s.label == "Choose a bus toward your destination"
-            ).set_value("902").run()
+
             self.assertFalse(app.exception)
-            self.assertTrue(any("Direction verified" in i.value for i in app.info))
+            self.assertTrue(
+                any("Live GPS · no boarding ETA" in m.value for m in app.markdown)
+            )
             self.assertFalse(
                 any(m.label == "Bus reaches your boarding stop" for m in app.metric)
             )
 
-    def test_successful_trip_renders_metrics(self):
+    def test_successful_trip_renders_ticket_and_separates_planned_arrival(self):
         with patch("client.api_request", return_value=trip_fixture()):
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             self.assertFalse(app.exception)
-            self.assertEqual(len(app.metric), 2)
+            self.assertTrue(any("Planned departure" in c.value for c in app.caption))
+            self.assertTrue(any("selected journey leg" in c.value for c in app.caption))
             self.assertTrue(any("17 Downtown" in s.value for s in app.markdown))
 
     def test_travel_modes_and_transfer_controls_are_forwarded(self):
@@ -327,6 +335,7 @@ class AppTests(unittest.TestCase):
         j["legs"] = [
             {
                 "route": "23",
+                "tripId": "leg-one",
                 "boarding": j["boarding"],
                 "alighting": transfer,
                 "departsAt": j["departsAt"],
@@ -336,6 +345,7 @@ class AppTests(unittest.TestCase):
             },
             {
                 "route": "10",
+                "tripId": "leg-two",
                 "boarding": transfer,
                 "alighting": j["alighting"],
                 "departsAt": j["departsAt"] + 1080000,
@@ -344,7 +354,11 @@ class AppTests(unittest.TestCase):
                 "direction": "1",
             },
         ]
-        with patch("client.api_request", return_value=plan):
+
+        def reply(endpoint, payload=None):
+            return {"buses": []} if endpoint.startswith("/api/tracking") else plan
+
+        with patch("client.api_request", side_effect=reply) as request:
             app = ready_app()
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             self.assertFalse(app.exception)
@@ -352,6 +366,19 @@ class AppTests(unittest.TestCase):
             self.assertTrue(
                 any("Transfer · 8 min available" in m.value for m in app.markdown)
             )
+
+            next(s for s in app.selectbox if s.label == "Bus leg to track").set_value(
+                1
+            ).run()
+            self.assertFalse(app.exception)
+            queries = [
+                c.args[0]
+                for c in request.call_args_list
+                if c.args[0].startswith("/api/tracking")
+            ]
+            self.assertIn("trip=leg-one", queries[0])
+            self.assertIn("trip=leg-two", queries[-1])
+            self.assertIn("stop=hub", queries[-1])
 
     def test_empty_and_api_failure_states(self):
         empty = {
@@ -372,3 +399,32 @@ class AppTests(unittest.TestCase):
             next(b for b in app.button if b.label == "Find my next bus").click().run()
             self.assertFalse(app.exception)
             self.assertEqual(app.error[0].value, "API unavailable")
+
+    def test_unrelated_bus_is_not_used_for_selected_journey(self):
+        def reply(endpoint, payload=None):
+            if endpoint.startswith("/api/tracking"):
+                return {
+                    "buses": [
+                        {
+                            "id": "wrong",
+                            "tripId": "different-trip",
+                            "route": "10",
+                            "arrivalAt": int(time.time() * 1000) + 120000,
+                        }
+                    ]
+                }
+            return trip_fixture()
+
+        with patch("client.api_request", side_effect=reply):
+            app = ready_app()
+            next(b for b in app.button if b.label == "Find my next bus").click().run()
+            self.assertFalse(app.exception)
+            self.assertTrue(
+                any(
+                    "Live tracking unavailable for this trip" in i.value
+                    for i in app.info
+                )
+            )
+            self.assertFalse(
+                any("assigned to this journey" in c.value for c in app.caption)
+            )
