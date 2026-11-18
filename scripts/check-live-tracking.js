@@ -15,6 +15,7 @@ const client = new BusTimeClient(process.env.GAINESVILLE_RTS_API_KEY, {
   schedule: new Schedule(data),
   requestsPerMinute: 10,
 });
+let planChecks = 0;
 try {
   // First check the reported route; one alternative is enough for this smoke test.
   for (const route of ["20", "13"]) {
@@ -76,10 +77,53 @@ try {
       if (!response.ok) continue;
       const result = await response.json();
       if (!result.buses?.some((b) => b.position)) continue;
+      if (planChecks >= 2) break;
+      planChecks++;
+      const plannedResponse = await fetch("http://127.0.0.1:3001/api/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: boarding,
+          destination: alighting,
+          mode: "leave_now",
+          maxWalk: 5,
+          maxTransfers: 0,
+        }),
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!plannedResponse.ok) continue;
+      const plan = await plannedResponse.json();
+      const index = plan.journeys.findIndex((j) =>
+        j.legs?.some(
+          (l) =>
+            l.tripId === vehicle.tripId &&
+            l.boarding.id === boarding.id &&
+            l.alighting.id === alighting.id,
+        ),
+      );
+      console.log(
+        "Full journey tracking check: " +
+          JSON.stringify({
+            route,
+            origin: boarding.name,
+            originId: boarding.id,
+            destination: alighting.name,
+            destinationId: alighting.id,
+            matchedOption: index,
+            options: plan.journeys.map((j) => ({
+              route: j.route,
+              departure: j.departsAt,
+              trip: j.legs?.[0]?.tripId,
+              assigned: j.legs?.[0]?.liveVehicleId,
+            })),
+          }),
+      );
+      if (index < 0) continue;
       console.log(
         "Verified live tracking example: " +
           JSON.stringify({
             route,
+            journeyOption: index + 1,
             boarding: { id: boarding.id, name: boarding.name },
             alighting: { id: alighting.id, name: alighting.name },
             buses: result.buses.map((b) => ({

@@ -296,3 +296,61 @@ test("unavailable or unrelated live data cannot turn schedule into live evidence
   assert.ok(result.partial);
   assert.ok(result.journeys.every((j) => j.timingLabel === "Scheduled"));
 });
+
+test("planner applies verified native trip mapping and advertises only an upcoming exact assignment", async () => {
+  const client = {
+    vehicles: async (route) =>
+      route === "3"
+        ? [
+            {
+              id: "bus",
+              route: "3",
+              nativeTripId: "123",
+              serviceDate: "20261116",
+              patternId: "p",
+              patternDistance: 0,
+              positionTimestamp: now,
+            },
+          ]
+        : [],
+    patterns: async () => [
+      {
+        id: "p",
+        stops: [
+          { id: "a", distance: 10 },
+          { id: "d", distance: 100 },
+        ],
+      },
+    ],
+    resolveVehicleTrip: () => "t3",
+    predictions: async (id) => [
+      {
+        VehicleId: "bus",
+        RouteId: "3",
+        NativeTripId: "123",
+        ExternalTripId: "",
+        Timestamp: now,
+        ETA: Date.parse(
+          id === "a" ? "2026-11-16T13:16:00Z" : "2026-11-16T13:46:00Z",
+        ),
+      },
+    ],
+  };
+  const result = await overlayLive(
+    search(feed(), { maxTransfers: 0 }),
+    client,
+    new Schedule(feed()),
+    now,
+  );
+  assert.equal(result.journeys[0].timingLabel, "Live");
+  assert.equal(result.journeys[0].legs[0].liveVehicleId, "bus");
+  client.vehicles = async () => [];
+  const unavailable = await overlayLive(
+    search(feed(), { maxTransfers: 0 }),
+    client,
+    new Schedule(feed()),
+    now,
+  );
+  assert.equal(unavailable.journeys[0].timingLabel, "Scheduled");
+  assert.equal(unavailable.journeys[0].legs[0].liveVehicleId, null);
+});

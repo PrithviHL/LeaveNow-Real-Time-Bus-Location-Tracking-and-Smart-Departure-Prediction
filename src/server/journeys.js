@@ -1,3 +1,4 @@
+import { patternServesJourney } from "./tracking.js";
 import { recommendJourneys } from "./recommendations.js";
 import { agencyTime, fresh, planTrip } from "./planner.js";
 
@@ -51,6 +52,57 @@ export async function overlayLive(result, client, schedule, now) {
       }
     }),
   );
+  const assigned = [];
+  if (typeof client.resolveVehicleTrip === "function") {
+    const routes = [
+      ...new Set(
+        result.journeys
+          .flatMap((j) => j.legs)
+          .filter((l) => l.departsAt <= now + 90 * 60000)
+          .map((l) => String(l.route)),
+      ),
+    ];
+    await Promise.all(
+      routes.map(async (route) => {
+        try {
+          const [vehicles, patterns] = await Promise.all([
+            client.vehicles(route),
+            client.patterns(route),
+          ]);
+          for (const v of vehicles) {
+            const timestamp = agencyTime(v.positionTimestamp);
+            if (
+              !Number.isFinite(timestamp) ||
+              timestamp < now - 180000 ||
+              timestamp > now + 60000
+            )
+              continue;
+            const tripId = client.resolveVehicleTrip(v, patterns);
+            if (tripId)
+              assigned.push({
+                ...v,
+                tripId,
+                pattern: patterns.find((p) => p.id === v.patternId),
+              });
+          }
+        } catch {
+          failed++;
+        }
+      }),
+    );
+    for (const predictions of cache.values())
+      for (const p of predictions) {
+        if (p.ExternalTripId) continue;
+        const v = assigned.find(
+          (v) =>
+            String(v.id) === String(p.VehicleId) &&
+            String(v.route) === String(p.RouteId) &&
+            ((p.NativeTripId && p.NativeTripId === v.nativeTripId) ||
+              (p.OriginalTripId && p.OriginalTripId === v.originalTripId)),
+        );
+        if (v) p.ExternalTripId = v.tripId;
+      }
+  }
   const prediction = (leg, stop, scheduled) =>
     (cache.get(stop.code || stop.id) || []).find(
       (p) =>
@@ -64,6 +116,14 @@ export async function overlayLive(result, client, schedule, now) {
   for (const original of result.journeys) {
     const j = { ...original, legs: original.legs.map((l) => ({ ...l })) };
     for (const l of j.legs) {
+      const matching = assigned.filter(
+        (v) =>
+          v.tripId === l.tripId &&
+          v.pattern &&
+          patternServesJourney(v, [v.pattern], l.boarding, l.alighting) &&
+          (!l.instance || (v.serviceDate || "") === l.instance.split(":")[0]),
+      );
+      l.liveVehicleId = matching.length === 1 ? String(matching[0].id) : null;
       const bp = prediction(l, l.boarding, l.scheduledDeparture),
         ap = prediction(l, l.alighting, l.scheduledArrival);
       if (

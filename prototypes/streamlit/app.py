@@ -600,7 +600,12 @@ def show_results():
         "Journey options",
         range(len(journeys)),
         format_func=lambda i: f"{journeys[i].get('recommendation', 'Recommended' if i == 0 else 'Alternative')} · Route {journeys[i]['route']} · planned {clock_time(journeys[i]['departsAt'])} · "
-        + ("Direct" if not journeys[i].get("transfers", 0) else "1 transfer"),
+        + ("Direct" if not journeys[i].get("transfers", 0) else "1 transfer")
+        + (
+            " · Live bus assigned"
+            if any(l.get("liveVehicleId") for l in journeys[i].get("legs", []))
+            else " · No live assignment"
+        ),
         key="journey_choice",
     )
     journey = journeys[selected]
