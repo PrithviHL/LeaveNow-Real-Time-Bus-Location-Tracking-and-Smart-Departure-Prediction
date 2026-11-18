@@ -46,3 +46,7 @@ Walking uses 65 m/min plus mapped stairs/crossing allowances and a two-minute bo
 ## Clean-release automated result
 
 The clean proposed release passed **73 Node tests and 49 Python tests (122 total)**, with zero failures. Node syntax checks and the source credential-pattern scan also passed. Instrumented line coverage for the timing-focused modules was: `predictions.js` 100%, `tracking.js` 94.02%, `walking.js` 97.86%, and `schedule.js` 92.70%. Coverage shows executed code, not measured forecast accuracy. The independently generated scenario counts above are nested cases within the tests, not additional top-level tests.
+
+## Hosted observation
+
+At 3:16 PM Eastern on November 18, the deployed commit `1e0bb6c` returned Bus 1806 on Route 20 for Palm Garden of Gainesville (822) → Oaks Mall (171), with fresh GPS and approach geometry. One same-generation boarding snapshot agreed between the plan and tracking responses. RTS supplied no verified downstream arrival in that sample; `alightingAt` remained null, while the plan retained its scheduled destination time under mixed provenance. This intentionally does not claim downstream live accuracy. The public health check returned `ok`; the new instance used about 230 MiB in a post-startup sample against its configured 512 MiB plan. See [the minimal recorded observation](live-check.json).

@@ -130,7 +130,7 @@ Tests cover routing, service calendars, overnight trips, live overlay checks, AP
 - [Architecture](docs/architecture.md) · [API reference](docs/api.md)
 - [Timetable routing](docs/timetable-routing.md) · [Google sign-in](docs/google-sign-in.md)
 - [Public deployment](docs/public-deployment.md) · [Operations](docs/operations.md)
-- [Docker and Kubernetes](docs/streamlit-containers.md) · [Testing](docs/testing.md)
+- [Docker and Kubernetes](docs/streamlit-containers.md) · [Testing](docs/testing.md) · [Rigorous timing audit](benchmarks/timing/README.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Change log](CHANGELOG.md)
 
 Data: [RTS](https://go-rts.com/rts-data/). Maps: [OpenStreetMap](https://www.openstreetmap.org/copyright). The original HTML interface includes Leaflet under its [BSD license](public/vendor/leaflet/LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md). Archived claims about model accuracy, AWS, or research deployments are not claims about the current application.

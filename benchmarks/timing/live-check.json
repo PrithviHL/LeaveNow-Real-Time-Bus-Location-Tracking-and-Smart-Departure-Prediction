@@ -1,0 +1,33 @@
+{
+  "codeCommit": "1e0bb6c8a06d521306f3c5ce13cb1e77bb5846c7",
+  "checkedAt": "2026-11-18T20:16:36.586Z",
+  "provider": "Gainesville RTS BusTime v3",
+  "route": "20",
+  "bus": "1806",
+  "boardingStop": "822",
+  "alightingStop": "171",
+  "comparedPredictionSnapshots": 1,
+  "boardingPredictionAt": 1795032990000,
+  "boardingAt": 1795033354000,
+  "verifiedLiveAlightingAt": null,
+  "plannedDestinationAt": 1795033680000,
+  "planTimingSource": "Live + Scheduled",
+  "finalWalkMinutes": 0,
+  "assertions": {
+    "sameGenerationBoardingETAEqual": true,
+    "missingLiveDestinationRemainsUnavailable": true,
+    "gpsAvailable": true,
+    "approachPathAvailable": true
+  },
+  "publicHealth": "ok",
+  "postStartupMemory": {
+    "at": "2026-11-18T20:17:00Z",
+    "rssBytes": 241430530,
+    "configuredLimitMiB": 512
+  },
+  "limitations": [
+    "One boarding prediction snapshot was compared; no live downstream snapshot was available.",
+    "No independently observed actual arrivals or pedestrian travel times were measured.",
+    "Memory is a post-startup sample, not peak load capacity."
+  ]
+}
