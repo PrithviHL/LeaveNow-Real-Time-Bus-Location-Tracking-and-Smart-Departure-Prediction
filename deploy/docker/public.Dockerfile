@@ -15,7 +15,7 @@ COPY --chown=app:app prototypes/streamlit ./prototypes/streamlit
 COPY --chown=app:app .streamlit/config.toml ./.streamlit/config.toml
 COPY --chown=app:app security/blocked-credential-fingerprints.json ./security/blocked-credential-fingerprints.json
 COPY --chown=app:app deploy/public_entrypoint.py ./deploy/public_entrypoint.py
-COPY scripts/import-gtfs.py ./scripts/import-gtfs.py
+COPY scripts/import-gtfs.py scripts/check-live-tracking.js ./scripts/
 RUN python scripts/import-gtfs.py --output data/gtfs.json.gz
 USER app
 EXPOSE 10000

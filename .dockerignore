@@ -22,4 +22,5 @@
 !security/blocked-credential-fingerprints.json
 !scripts/
 !scripts/import-gtfs.py
+!scripts/check-live-tracking.js
 !prototypes/streamlit/authentication.py
