@@ -42,6 +42,13 @@ try {
           ),
         }),
     );
+    if (route === "20") {
+      const raw = await client.request("getvehicles", {rt:route, ...(client.feed ? {rtpidatafeed:client.feed} : {}), tmres:"s"}, 5000);
+      console.log("Trip identity diagnostic: " + JSON.stringify({
+        live: (raw.vehicle || []).slice(0,3).map(v => ({trip:v.tatripid, original:v.origtatripno, date:v.stsd})),
+        gtfs: data.trips.filter(t=>String(data.routes[t.route]?.short)===route).slice(0,3).map(t=>t.id),
+      }));
+    }
     for (const vehicle of vehicles) {
       if (!vehicle.tripId) continue;
       const pattern = patterns.find((p) => p.id === vehicle.patternId);
