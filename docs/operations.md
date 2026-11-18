@@ -58,3 +58,7 @@ Press **Use my current location** below the left side of the **Starting from** f
 ## Walking graph operations
 
 The OSM pedestrian snapshot is bundled in the image, so walking searches need no additional key or routing service. Refresh it deliberately using [the import and review procedure](walking-routing.md#coverage-and-refresh); do not query Overpass per search or during image builds. After deployment, verify the startup log reports OSM access walks, check `/_stcore/health`, and inspect the new instance’s memory rather than the old instance. Investigate out-of-coverage or disconnected paths before changing access rules. The initial hosted measurement was about 206 MiB of a 512 MiB limit; it is not a load guarantee.
+
+## Live tracking refresh
+
+The tracking fragment refreshes every five seconds by default; users can disable Auto-refresh live bus or refresh manually. Trip search is not rerun on each tracking tick. Vehicle polling is scoped to the selected leg’s route and cached/coalesced for five seconds; fleet diagnostics retain their 20-second cache, stop predictions 15 seconds, and route patterns five minutes. The process-wide 60-request/minute budget still applies. Five-second UI refresh does not guarantee five-second provider GPS or ETA updates. Different routes and stop pairs across many users can exhaust the budget; partial data warnings remain visible. Frequent map redraws may use more browser CPU/battery, especially on mobile.

@@ -149,14 +149,12 @@ export class BusTimeClient {
           JSON.stringify({
             stop: "44",
             count: (data.prd || []).length,
-            sample: (data.prd || [])
-              .slice(0, 3)
-              .map((p) => ({
-                route: p.rt,
-                bus: p.vid,
-                generated: p.tmstmp,
-                arrival: p.prdtm,
-              })),
+            sample: (data.prd || []).slice(0, 3).map((p) => ({
+              route: p.rt,
+              bus: p.vid,
+              generated: p.tmstmp,
+              arrival: p.prdtm,
+            })),
           }),
       );
     }
@@ -208,16 +206,21 @@ export class BusTimeClient {
           .sort((a, b) => a.sequence - b.sequence),
       }));
   }
-  async vehicles() {
+  async vehicles(route = null) {
     const rtpidatafeed = await this.feedName();
-    const data = await this.request(
-      "getroutes",
-      rtpidatafeed ? { rtpidatafeed } : {},
-      3600_000,
-    );
-    const routes = (data.routes || [])
-      .filter((r) => r && r.rt !== undefined)
-      .map((r) => String(r.rt));
+    // Tracking requests only its selected route; fleet diagnostics keep batching.
+    const data = route
+      ? null
+      : await this.request(
+          "getroutes",
+          rtpidatafeed ? { rtpidatafeed } : {},
+          3600_000,
+        );
+    const routes = route
+      ? [String(route)]
+      : (data.routes || [])
+          .filter((r) => r && r.rt !== undefined)
+          .map((r) => String(r.rt));
     const vehicles = [];
     // BusTime permits at most ten route designators per request.
     for (let i = 0; i < routes.length; i += 10) {
@@ -228,7 +231,7 @@ export class BusTimeClient {
           ...(rtpidatafeed ? { rtpidatafeed } : {}),
           tmres: "s",
         },
-        20_000,
+        route ? 5_000 : 20_000,
       );
       vehicles.push(...(result.vehicle || []));
     }

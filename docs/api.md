@@ -91,3 +91,5 @@ Private tracking requires a valid boarding stop, get-off stop, and route. Bus ch
 ## GET /api/addresses?q=Marston%20Science%20Library
 
 Explicit address/place search via Photon, bounded to Gainesville and returning selectable names/coordinates. This is separate from stop-name suggestions. The backend caches successful results for 24 hours in process memory, coalesces identical requests, and limits uncached provider requests to one per second for this single-instance demo. `GEOCODER_URL` can select a compatible self-hosted or replacement endpoint. No API key is required. Queries go to the external search provider; avoid confidential text. Provider failures give an actionable error instead of invented coordinates. OSM attribution appears in the UI.
+
+Tracking polls the selected route’s vehicles with a shared five-second cache. Prediction and pattern caches remain 15 seconds and five minutes respectively. The UI refreshes its tracking fragment every five seconds when enabled, without repeating trip search. Provider position timestamps, not the UI refresh rate, determine GPS freshness.

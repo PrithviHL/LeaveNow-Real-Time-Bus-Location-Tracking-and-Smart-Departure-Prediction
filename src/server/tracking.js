@@ -34,7 +34,7 @@ export async function trackBoarding(
     return { stop, route, checkedAt: now, buses: [], partial: false };
   const results = await Promise.allSettled([
     client.predictions(stop.code || stop.id),
-    client.vehicles(),
+    client.vehicles(route),
     client.predictions(alighting.code || alighting.id),
     client.patterns(route),
   ]);

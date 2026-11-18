@@ -474,7 +474,7 @@ if st.button(
     st.session_state.pop("trip_result", None)
 
 
-@st.fragment(run_every="20s" if auto_refresh else None)
+@st.fragment(run_every="5s" if auto_refresh else None)
 def show_bus_tracking(trip, journey, leg, light):
     st.subheader("Track your bus")
     st.caption(
@@ -534,7 +534,7 @@ def show_bus_tracking(trip, journey, leg, light):
     except ApiError as error:
         st.warning(str(error))
     map_view(trip["origin"], trip["destination"], journey, light=light, bus=bus)
-    st.caption("Pink = live bus · Updates every 20s when enabled.")
+    st.caption("Pink = live bus · Refreshes every 5s when enabled · RTS GPS may update less often.")
 
 
 def show_results():
