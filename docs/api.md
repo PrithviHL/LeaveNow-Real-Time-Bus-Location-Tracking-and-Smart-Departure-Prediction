@@ -62,7 +62,7 @@ Response fields:
 | `origin`, `destination`           | Validated points                                              |
 | `nearestStop`                     | Closest physical origin stop within walking range, or null    |
 | `originStops`, `destinationStops` | Candidate stops with `meters` and estimated `walkMinutes`     |
-| `journeys`                        | Up to eight verified direct, catchable options                |
+| `journeys`                        | Up to three ranked direct/one-transfer timetable choices; legacy live-only fallback may return up to eight                |
 | `departures`                      | Nearby departures; destination reachability is not guaranteed |
 | `reason`                          | Explanation when no direct recommendation exists, or null     |
 | `partial`                         | Some stop prediction requests failed                          |
@@ -71,6 +71,10 @@ Response fields:
 | `scope`                           | Description of search limits                                  |
 
 Journey fields include route/headsign/direction, trip and vehicle IDs, boarding/alighting stops, `departsAt`, `arrivesAt`, `leaveAt`, `destinationAt`, `rideMinutes`, walking durations, and `feedTimestamp`. Times are Unix milliseconds.
+
+## Walking provenance
+
+Timetable `boarding` and `alighting` stop objects and a transfer `connection` include `walkPath` (longitude/latitude pairs) and `walkSource` (`osm` or `estimate`). Walk distances are meters and durations are rounded-up minutes. `walking` describes graph provenance, modelled pace, and boarding allowance. Missing coverage permits a labelled fallback; a known disconnected network does not. Do not interpret bus GTFS geometry as walking geometry or recorded GPS history. See [walking rules](walking-routing.md).
 
 ## Errors
 

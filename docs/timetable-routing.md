@@ -40,7 +40,7 @@ Bounds keep the portfolio service practical:
 | Live lookup scope                    | Up to 12 endpoint IDs for near-time candidates   |
 | Returned choices                     | Up to 8                                          |
 
-The GTFS rules do not guarantee a bus will hold a connection. Demand-responsive pickup/dropoff types and in-seat/interlining transfers are not implemented as passenger-ready options. No fare optimization, wheelchair filtering, turn-by-turn walking, is claimed. Bus lines use the published trip shape clipped by GTFS distance along the shape; these are not recorded vehicle trails. Walking links remain schematic. Walking uses straight-line distance × 1.25 at 80 m/min; initial boarding includes two extra minutes.
+The GTFS rules do not guarantee a bus will hold a connection. Demand-responsive pickup/dropoff types and in-seat/interlining transfers are not implemented as passenger-ready options. No fare optimization, wheelchair filtering, turn-by-turn walking, is claimed. Bus lines use the published trip shape clipped by GTFS distance along the shape; these are not recorded vehicle trails. Walking follows a bundled OSM pedestrian graph where covered, at 65 m/min with crossing/stair allowances; initial boarding includes two extra minutes. Short endpoint connectors and missing-coverage fallbacks remain estimates. See [walking routing](walking-routing.md) for exclusions and limits.
 
 ## Feed lifecycle
 
@@ -74,7 +74,7 @@ Transfer search orders first legs by their best possible score and keeps a conse
 
 ### Published route shapes
 
-The importer retains `shapes.txt`, trip `shape_id`, and stop-time `shape_dist_traveled`. Returned journey legs include geometry only for the boarding-to-alighting segment, using distance interpolation to handle loops and repeated stops. Missing or invalid geometry produces no bus line rather than a fabricated straight route. Blue/purple bus lines represent the published schedule path, not actual historical GPS travel or temporary detours. Green walking connections remain approximate. The live pink marker stays at the reported GPS position. No Google Maps API or billing is required.
+The importer retains `shapes.txt`, trip `shape_id`, and stop-time `shape_dist_traveled`. Returned journey legs include geometry only for the boarding-to-alighting segment, using distance interpolation to handle loops and repeated stops. Missing or invalid geometry produces no bus line rather than a fabricated straight route. Blue/purple bus lines represent the published schedule path, not actual historical GPS travel or temporary detours. Green walking paths follow mapped OSM pedestrian links when available; endpoint connectors and labelled fallback links remain estimates. The live pink marker stays at the reported GPS position. No Google Maps API or billing is required.
 
 ### Best journey recommendations
 

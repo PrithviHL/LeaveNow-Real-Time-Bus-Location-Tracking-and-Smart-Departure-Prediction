@@ -36,14 +36,18 @@ curl -H 'Content-Type: application/json' \
 The local preview is exposed at the printed app address. Browser automation was unavailable in this session; the following visual/device checks require manual verification:
 
 - Accept and decline geolocation; exercise both fallback paths
-- Search and choose stops with keyboard and pointer; enter coordinates
-- Set origin and destination pins, and cancel selection
+- Search and choose stops and addresses with keyboard and pointer in both combined fields
+- Use the current-location button below the origin; clear and replace selections
 - Check mobile layout, map controls, dialog, and readable attribution
 - Inspect a successful journey, no-direct-trip result, and network-failure message
 - Check live refresh, boarding-stop walking link, countdowns and alternative journeys
 
 ## Known limits
 
-Provider ETA accuracy is outside the app’s control. The current Gainesville planner supports direct and one-transfer timetable journeys with verified live overlays; walking remains approximate. Blue/purple paths use published GTFS shapes, not recorded GPS history. Google sign-in is required on the hosted app. Archived research-model binaries are not loaded or evaluated by the current app.
+Provider ETA accuracy is outside the app’s control. The current Gainesville planner supports direct and one-transfer timetable journeys with verified live overlays; walking follows mapped OSM paths where covered, with modelled times and labelled fallback estimates. Blue/purple paths use published GTFS shapes, not recorded GPS history. Google sign-in is required on the hosted app. Archived research-model binaries are not loaded or evaluated by the current app.
 
 See [routing rules](timetable-routing.md) for search bounds and [measured evaluation](../benchmarks/routing/README.md) for benchmark methodology, raw results, and test evidence.
+
+## OSM walking rollout
+
+The November 18, 2026 rollout passed 58 Node and 36 Python tests, plus both remote workflows. Tests cover detours, partial-edge snapping, pedestrian one-ways, access restrictions, disconnected paths, crossing/stair costs, map geometry, and a missed-departure regression. See [deployment evidence and resource limits](walking-routing.md#deployment-verification--november-18-2026-eastern). Counts describe that commit, not a permanent suite size.

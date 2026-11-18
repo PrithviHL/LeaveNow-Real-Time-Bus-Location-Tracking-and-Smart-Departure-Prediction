@@ -45,3 +45,7 @@ This budget protects provider usage but is not a full DDoS or distributed rate-l
 - `python3 scripts/audit-credential-history.py HEAD` checks reachable Git history for known exposed key fingerprints.
 - A successful Render build/deploy and public HTTPS health request are required before reporting the public URL as live.
 - Successful authenticated RTS stop search/planning after a replacement key is configured is a separate final validation step.
+
+## Bundled walking routing
+
+The Docker image includes `src/server/walking-data/gainesville.json.gz` via the server source copy. Keep this artifact and its ODbL notice in release images. No walking-service secret, runtime download, Google Maps billing, or new Render resource is required. Node heap flags reserve room for Streamlit on the free instance. See [coverage, resource assumptions and verified deployment evidence](walking-routing.md).

@@ -1,56 +1,35 @@
 # Architecture
 
-LeaveNow is a small Node.js service with a static browser interface. No application code from the historical Streamlit prototype is executed. The active planner uses provider predictions, not an AI-generated or locally trained travel-time model.
+The public Gainesville app is Streamlit with Google sign-in, backed by a private Node API in the same Docker container on Render. `deploy/public_entrypoint.py` starts both processes, imports the official GTFS feed, and probes readiness. The original static browser interface is retained for compatibility. No trained travel-time model is used.
 
 ```mermaid
 flowchart LR
-  Browser[Browser: location, stop search, map] --> Server[Node HTTP application]
-  Server --> Planner[Direct-trip planner]
-  Planner --> Client[Cached RTS client]
-  Client --> RTS[RTS HTTPS API]
-  Browser --> Tiles[OpenStreetMap tiles]
+  Browser[Browser: combined stop/address search and GPS] --> UI[Streamlit + Google sign-in]
+  UI --> API[Private Node API]
+  API --> Schedule[GTFS direct / one-transfer planner]
+  Schedule --> Walk[Local A* + bundled OSM graph]
+  API --> Live[Gainesville BusTime live verification]
+  API --> Places[Photon address search]
+  UI --> Map[GTFS bus shapes + OSM walking paths + fresh GPS]
 ```
 
-## Modules
+## Modules and planning
 
-| Module                  | Responsibility                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| `src/server/index.js`   | Read local environment, validate config, create listener, shut down gracefully       |
-| `src/server/config.js`  | Validate API key and port                                                            |
-| `src/server/app.js`     | HTTP routes, input/origin/host validation, static asset serving                      |
-| `src/server/transit.js` | HTTPS RTS requests, timeouts, normalization, cache and concurrent-request coalescing |
-| `src/server/planner.js` | Distance, walking estimates, Gainesville timestamps, fresh prediction matching         |
-| `public/app.js`         | Form state, permission handling, stop selection, map layers, results and refreshing  |
+- `schedule.js`: service calendars, ordered stops, direct/one-transfer candidates, routed access/egress/transfer walks, and ranking.
+- `walking.js`: segment snapping, bounded local A*, compact typed arrays, and bounded caches. `scripts/import-walking.py` compiles the pinned ODbL graph.
+- `journeys.js`: travel controls, exact-trip live overlays, and updated catchability/deadline checks.
+- `bustime.js`: Gainesville live predictions, patterns and GPS; live bus choices require verified downstream stop order.
+- `geocoding.js` and stop APIs: combined UI suggestions using local stop matches and debounced external address lookup.
+- `prototypes/streamlit/app.py` and `presentation.py`: compact search, trip controls, account menu, bus selection, map and timeline.
 
-## Planning sequence
+Stops are shortlisted by proximity, then walking paths determine feasible access and egress. The planner considers up to 40 nearby graph candidates at each end and retains up to 12 routed stops. Direct and one-transfer timetable trips are checked against walking time, the two-minute boarding allowance, transfer buffers, service dates, and user time controls. Up to three distinct first departures are ranked; dominated transfer variants are grouped. Live updates recheck feasibility. Bus paths are published GTFS shapes, not recorded vehicle trails. All agency times use `America/New_York`.
 
-1. Validate numeric origin/destination coordinates and walking allowance (5, 10, 15, or 20 minutes).
-2. Obtain normalized RTS stops. Calculate great-circle distances from each location.
-3. Find up to six stops within the walking allowance at each end. Convert the allowance to a distance using the same walking estimate as the result cards.
-4. Fetch predictions for the unique stops, with no more than three requests in flight for one plan.
-5. Reject feeds more than three minutes old, timestamps more than one minute in the future, malformed ETA values, and departures that cannot be reached with walking plus the boarding buffer.
-6. Match route and external trip ID (falling back to RTS TripId), require agreement on vehicle ID when supplied at both ends, require the same feed date, and require the destination ETA to be later than departure and within three hours.
-7. Prefer the closest usable boarding stop, then its earliest catchable departure, then arrival at the final destination. Deduplicate a trip at a boarding stop and return up to eight choices.
-8. Display the closest physical stop separately. Any unverified nearby departures are explicitly marked as not verified to reach the destination.
+See [routing limits](timetable-routing.md), [OSM coverage and fallback policy](walking-routing.md), and [API fields](api.md). These bounded searches do not prove that every possible journey was considered.
 
-All agency timestamps are interpreted in `America/New_York`, independently of the computer’s timezone. Unknown/missing trip identity is not enough to recommend a bus.
+## Data, privacy and resources
 
-## Data and privacy
+`GAINESVILLE_RTS_API_KEY` stays in server-side deployment secrets and is never embedded in browser assets. User coordinates are used for the trip request; address queries are sent to the configured geocoder. Browser/device permission is required for GPS. Basemap requests disclose the viewed area to the configured map provider.
 
-The RTS credential is loaded from server environment variables or the ignored root `.env`. It is only sent to the provider over HTTPS. Only stop IDs are sent to RTS for planning; the user’s coordinates stay between their browser and this local server.
+Walking searches use the bundled snapshot without external routing requests, paid routing keys, or an additional service. Times are modelled at 65 m/min with mapped crossing/stair allowances; short endpoint links and uncovered locations remain labelled estimates. Known disconnected graph paths are excluded. The snapshot needs deliberate refresh and cannot reflect every closure or accessibility restriction.
 
-No location or trip database exists. The server does not log request bodies or coordinates. Map tile requests go directly to OpenStreetMap, revealing the viewed map area to that service. Clicking the optional Google walking-directions link shares the selected endpoints with Google.
-
-## Caching and failures
-
-RTS stops are cached for one hour, predictions for 15 seconds, and vehicles for 20 seconds. Simultaneous identical upstream requests share a promise. The cache is process-local and bounded by entry count. Every upstream request has a ten-second timeout. The app does not substitute fabricated or scheduled predictions on failure.
-
-A plan can return partial coverage with a warning when some stops fail. If all prediction requests fail, the server returns an error rather than claiming there is no bus. Fresh positions are the only vehicles shown on the map.
-
-## Deliberate boundaries
-
-Search covers RTS stop names and IDs. Map pins and coordinate entry support arbitrary starting/destination locations without introducing an external address-geocoding dependency. No transfers, GTFS schedule search, road-network walking routing, or inferred bus geometry are implemented. Future transfer planning should use an ordered timetable/GTFS graph rather than combining unrelated arrival predictions.
-
-## Timetable extension
-
-The live Streamlit deployment now uses `schedule.js` for service calendars, trip/stop order, and bounded direct/one-transfer search. `journeys.js` validates travel controls, joins fresh RTS predictions by exact GTFS trip ID, and rechecks catchability, arrival deadlines, and transfer buffers after live changes. `scripts/import-gtfs.py` builds the compact artifact from the official feed. See [timetable routing](timetable-routing.md) for the current flow; the earlier direct-only sequence above describes the compatibility fallback and original browser interface.
+Docker limits Node heap growth to leave room for Streamlit on the free instance. See [the measured rollout](walking-routing.md#deployment-verification--november-18-2026-eastern) for test counts, hosted memory, and limitations. Deployment wiring and operational checks are documented in [public deployment](public-deployment.md) and [operations](operations.md).

@@ -62,3 +62,7 @@ After network permission was granted for publishing, a recheck passed **47/47 No
 See node-coverage.log and python-tests.log. The initial restricted Node run discovered 47 tests: 44 passed; three integration tests could not open 127.0.0.1 because of sandbox restrictions. In that initial run, 75 of 78 discovered tests passed, with three blocked by the environment. The later recheck resolved the environment restriction; retain both logs to distinguish these runs. Aggregate Node line coverage was 82.61%, depressed by the blocked HTTP integration tests. The tracking and recommendation module percentages above are module-specific.
 
 Do not claim prediction accuracy, reduced passenger wait time, user adoption, production uptime, requests per second, or percentage performance improvement from this evaluation. Those require separate ground-truth, usage, monitoring, load, or before/after measurements. LeaveNow consumes provider predictions; this evaluation does not establish a trained machine-learning model.
+
+## Version scope: pre-OSM baseline
+
+These recorded results predate commit `918c803` (November 18, 2026), which added network-routed OSM walking legs and changed access/transfer feasibility. The 3.1× availability and 31.3 ms p95 figures are historical baseline measurements, not measurements of the current walking-enabled deployment. Rerun the documented benchmark on the new commit before making updated performance claims. See [walking rollout evidence](../../docs/walking-routing.md).

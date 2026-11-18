@@ -2,7 +2,7 @@
 
 **Your next bus, figured out.** A Gainesville RTS trip planner that combines published timetables with available live predictions to find nearby stops, direct or one-transfer journeys, and when to leave.
 
-**[Open the live app](https://leavenow-prithvihl.onrender.com)** · [Routing rules](docs/timetable-routing.md) · [Deployment](docs/public-deployment.md) · [Google sign-in](docs/google-sign-in.md)
+**[Open the live app](https://leavenow-prithvihl.onrender.com)** · [Routing rules](docs/timetable-routing.md) · [OSM walking routes](docs/walking-routing.md) · [Deployment](docs/public-deployment.md) · [Google sign-in](docs/google-sign-in.md)
 
 The live Streamlit application runs from **`feature/streamlit-containers`**. The `main` branch retains the earlier direct-bus browser application. Use this branch for the current deployed UI and routing features.
 
@@ -26,7 +26,7 @@ The availability gain applies to this one-date sample, not citywide coverage or 
 4. Select **Find my next bus**. Review the trip card and map. Expand **Trip details** for the walking and transfer timeline.
 5. Check the timing label: **Live**, **Scheduled**, or **Live + Scheduled**. These indicate the source of the displayed times, not a guarantee that a service will run on time.
 
-Stop suggestions cover **RTS stop names**. Address/place search uses Photon/OpenStreetMap and is limited to Gainesville. Browser GPS requires permission and HTTPS; open the app directly in Chrome/Safari if an embedded browser blocks it. The map and timeline provide estimates; green walking links are approximate; blue/purple bus paths follow published RTS GTFS shapes. Results depend on the selected service date and provider availability.
+Stop suggestions cover **RTS stop names**. Address/place search uses Photon/OpenStreetMap and is limited to Gainesville. Browser GPS requires permission and HTTPS; open the app directly in Chrome/Safari if an embedded browser blocks it. The map and timeline provide estimates; green walking paths follow the bundled OpenStreetMap pedestrian network where available, with short access connectors and fallback links labelled estimates; blue/purple bus paths follow published RTS GTFS shapes. Results depend on the selected service date and provider availability.
 
 ### Example inputs
 
@@ -50,7 +50,7 @@ The compact interface includes a decorative CSS 3D bus scene, subtle card depth,
 - Separate Live/Scheduled labels, multi-leg timelines, journey cards, maps, manual refresh, and Leave-now auto-refresh.
 - A private Node API in the hosted container; the RTS key is kept out of browser code and the Streamlit child's environment.
 
-Search is bounded: departures up to 36 hours forward; Arrive-by lookback up to eight hours excluding departures you can no longer catch; date controls cover the next 14 days within published service dates. Walking uses straight-line distance × 1.25 at 80 meters/minute, plus a two-minute boarding buffer. A no-result message means no journey was verified within these limits, not that every possible transit journey is impossible.
+Search is bounded: departures up to 36 hours forward; Arrive-by lookback up to eight hours excluding departures you can no longer catch; date controls cover the next 14 days within published service dates. Walking uses local A* over a bundled Gainesville OpenStreetMap graph at 65 meters/minute, with stair/crossing allowances and a two-minute boarding buffer. Access, transfer, and final walks affect catchability. Missing coverage uses an explicitly labelled straight-line × 1.5 estimate; known disconnected paths are excluded. See [walking rules and coverage](docs/walking-routing.md). A no-result message means no journey was verified within these limits, not that every possible transit journey is impossible.
 
 The GTFS artifact is built during deployment and must be refreshed before its service dates expire. This app does not train a bus-location prediction model or guarantee future positions. The original HTML browser interface remains a direct-only compatibility view. [Full timetable rules and limits](docs/timetable-routing.md).
 

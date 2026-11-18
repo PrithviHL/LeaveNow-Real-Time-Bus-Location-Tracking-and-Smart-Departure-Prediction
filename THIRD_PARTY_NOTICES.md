@@ -8,9 +8,11 @@ Browser mapping library, vendored under `public/vendor/leaflet`. Distributed und
 
 Map data © OpenStreetMap contributors, available under the Open Database License. Map attribution remains visible. Tiles are fetched from the standard OpenStreetMap tile service for interactive viewing. See https://www.openstreetmap.org/copyright and https://operations.osmfoundation.org/policies/tiles/.
 
+The bundled derivative pedestrian database at `src/server/walking-data/gainesville.json.gz` is distributed separately from application code under ODbL 1.0. See [its license and extract provenance](src/server/walking-data/LICENSE-OSM.md) and [refresh instructions](docs/walking-routing.md). No Google Maps data is included.
+
 ## RTS data
 
-Stops, vehicle positions, and arrival predictions are provided by Regional Transit Service / RGRTA using an API access credential. Provider terms and availability apply: https://www.myrts.com/RGRTA-API.
+The current deployment uses Gainesville Regional Transit System (RTS) official GTFS and BusTime v3 vehicle/prediction data. Provider terms and availability apply: https://go-rts.com/rts-data/. Historical Rochester/RGRTA material remains archived and does not describe the active service.
 
 Historical reports/notebooks may describe other third-party packages. Those Python packages are not dependencies of the active Node application.
 

@@ -26,6 +26,14 @@ Review access-policy/data changes and rerun walking tests before rebuilding. The
 
 ## Resource limits and verification
 
-Routing uses compact adjacency arrays, reusable query buffers, bounded segment snapping, a 40-minute route-search bound, and bounded route/snap caches. Docker Node processes use a 160 MB old-space / 4 MB semi-space heap configuration to leave room for Streamlit. Five local real-feed searches with the tighter 128 MB old-space test setting stayed around 238 MB Node RSS after warmup; hosted memory must be checked separately.
+Routing uses compact adjacency arrays, reusable query buffers, bounded segment snapping, a 40-minute route-search bound, and bounded route/snap caches. Docker Node processes use a 160 MB old-space / 4 MB semi-space heap configuration to leave room for Streamlit. Five local real-feed searches with the tighter 128 MB old-space test setting stayed around 238 MB Node RSS after warmup; hosted memory was checked separately after deployment.
 
 Tests cover real network detours, sub-edge snapping, foot one-ways, disconnected graphs, crossing/stair time, import access restrictions, map geometry, and rejecting a departure the old straight-line estimate would incorrectly consider catchable. A real-data check for Marston Science Library → Reitz Union routed approximately 510 m in 486 seconds (rounded up to 9 minutes), before the boarding buffer. Results vary with the chosen endpoints and data snapshot.
+
+## Deployment verification — November 18, 2026 (Eastern)
+
+Commit `918c803` was pushed to `feature/streamlit-containers` and deployed to [the live app](https://leavenow-prithvihl.onrender.com). The hosted startup probe returned three timetable journeys, all with OSM access walks, and the public Streamlit health endpoint returned `ok`. Render reported 215,678,980 bytes (about 206 MiB) for the new instance against its 512 MiB limit after the probe. This is one post-startup measurement, not a peak-load capacity guarantee. No paid service or routing key was added.
+
+The clean committed-source check passed 58 Node tests and 36 Python tests (94 total). Both GitHub workflows passed: [continuous integration](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/actions/runs/44242682755) and [Streamlit containers](https://github.com/PrithviHL/LeaveNow-Real-Time-Bus-Location-Tracking-and-Smart-Departure-Prediction/actions/runs/44242682998). Browser/device GPS and visual checks were not manually verified during this rollout.
+
+The earlier [60-search benchmark](../benchmarks/routing/README.md) predates OSM walking and must not be presented as current walking-enabled latency or journey availability.
