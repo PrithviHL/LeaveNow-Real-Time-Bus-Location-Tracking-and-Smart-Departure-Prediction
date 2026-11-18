@@ -1,4 +1,5 @@
 // Server-side, bounded diagnostic. Never prints credentials, provider URLs or user input.
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { Schedule } from "../src/server/schedule.js";
@@ -181,6 +182,39 @@ try {
       result = await tracked.json();
       if (!result.buses?.some((b) => b.position && b.tripId === leg.tripId))
         continue;
+      let comparedSnapshots = 0;
+      for (const bus of result.buses) {
+        if (bus.predictionAt && bus.predictionAt === leg.boardingPredictionAt) {
+          assert.equal(bus.arrivalAt, leg.departsAt);
+          comparedSnapshots++;
+        }
+        if (
+          bus.alightingPredictionAt &&
+          bus.alightingPredictionAt === leg.alightingPredictionAt
+        ) {
+          assert.equal(bus.alightingAt, leg.arrivesAt);
+          comparedSnapshots++;
+        }
+        if (bus.alightingAt && bus.arrivalAt)
+          assert.ok(bus.alightingAt > bus.arrivalAt);
+      }
+      console.log(
+        "Live timing consistency: " +
+          JSON.stringify({
+            comparedSnapshots,
+            planSource: plan.journeys[index].timingLabel,
+            planDestination: plan.journeys[index].destinationAt,
+            finalWalkMinutes: plan.journeys[index].finalWalkMinutes,
+            buses: result.buses.map((b) => ({
+              id: b.id,
+              boardingAt: b.arrivalAt,
+              alightingAt: b.alightingAt,
+              boardingPredictionAt: b.predictionAt,
+              alightingPredictionAt: b.alightingPredictionAt,
+            })),
+            checkedAt: new Date().toISOString(),
+          }),
+      );
       console.log(
         "Verified live tracking example: " +
           JSON.stringify({
@@ -201,8 +235,10 @@ try {
     }
   }
   console.log("Live tracking example unavailable in this bounded sample.");
-} catch {
+} catch (error) {
   console.log(
-    "Live tracking diagnostic unavailable; retry during active service.",
+    error?.code === "ERR_ASSERTION"
+      ? "Live timing consistency FAILED; investigate prediction provenance."
+      : "Live tracking diagnostic unavailable; retry during active service.",
   );
 }

@@ -20,7 +20,7 @@ from client import (
     travel_timestamp,
 )
 
-from presentation import theme, markup, map_view, ticket, timeline
+from presentation import theme, markup, map_view, ticket, timeline, live_arrival_summary
 from authentication import account_controls, account_menu
 
 st.set_page_config(
@@ -531,6 +531,17 @@ def show_bus_tracking(trip, journey, leg, light):
                 "walkMinutes", 0
             )
         ticket(tracked, bus=bus)
+        arrival = live_arrival_summary(journey, leg, bus)
+        if arrival:
+            st.metric(arrival["label"], clock_time(arrival["at"]))
+            if arrival["connectionRisk"]:
+                st.warning(
+                    "Connection may be missed. Refresh arrivals to check alternatives."
+                )
+        elif bus:
+            st.caption(
+                "Live destination ETA unavailable; planned arrival is in journey details."
+            )
         if bus:
             st.caption(
                 "Live boarding estimate for this trip. Destination and connection times below were last checked with the journey plan."

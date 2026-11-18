@@ -1,3 +1,4 @@
+import { latestPredictions, predictionAtStop } from "./predictions.js";
 import { agencyTime, fresh } from "./planner.js";
 import { serviceDate } from "./schedule.js";
 import { busApproach } from "./approach.js";
@@ -85,10 +86,17 @@ export async function trackBoarding(
   const tripId = (p) => String(p.ExternalTripId || p.TripId || "");
   const upcoming = vehicles.filter(validVehicle);
   const buses = new Map();
-  for (const p of arrivals.filter(validPrediction)) {
+  const boardingPredictions = latestPredictions(arrivals, now).filter(
+    (p) => validPrediction(p) && predictionAtStop(p, stop.code || stop.id),
+  );
+  const alightingPredictions = latestPredictions(departures, now).filter(
+    (p) =>
+      validPrediction(p) && predictionAtStop(p, alighting.code || alighting.id),
+  );
+  for (const p of boardingPredictions) {
     const id = String(p.VehicleId),
       v = upcoming.find((v) => String(v.id) === id);
-    const through = departures.some(
+    const through = alightingPredictions.find(
       (q) =>
         validPrediction(q) &&
         String(q.VehicleId) === id &&
@@ -104,6 +112,8 @@ export async function trackBoarding(
       destination: p.Destination || p.RouteDir || "",
       arrivalAt: agencyTime(p.ETA),
       predictionAt: agencyTime(p.Timestamp),
+      alightingAt: through ? agencyTime(through.ETA) : null,
+      alightingPredictionAt: through ? agencyTime(through.Timestamp) : null,
       tripId: selectedTrip?.id || null,
       directionVerified: true,
       position: v
@@ -125,6 +135,8 @@ export async function trackBoarding(
       destination: v.label || alighting.name,
       arrivalAt: null,
       predictionAt: null,
+      alightingAt: null,
+      alightingPredictionAt: null,
       tripId: selectedTrip?.id || null,
       directionVerified: true,
       position: {
@@ -135,6 +147,19 @@ export async function trackBoarding(
     });
   }
   for (const bus of buses.values()) {
+    if (!bus.alightingAt && selectedTrip) {
+      const prediction = alightingPredictions.find(
+        (p) =>
+          String(p.VehicleId) === bus.id &&
+          String(p.ExternalTripId) === selectedTrip.id &&
+          (!bus.arrivalAt || agencyTime(p.ETA) > bus.arrivalAt),
+      );
+      if (prediction) {
+        bus.alightingAt = agencyTime(prediction.ETA);
+        bus.alightingPredictionAt = agencyTime(prediction.Timestamp);
+      }
+    }
+
     const vehicle = upcoming.find((v) => String(v.id) === bus.id);
     bus.approachGeometry =
       vehicle && patternServesJourney(vehicle, patterns, stop, alighting)

@@ -1,3 +1,5 @@
+import { serviceDate } from "./schedule.js";
+import { latestPredictions, predictionAtStop } from "./predictions.js";
 import { patternServesJourney } from "./tracking.js";
 import { recommendJourneys } from "./recommendations.js";
 import { agencyTime, fresh, planTrip } from "./planner.js";
@@ -103,15 +105,22 @@ export async function overlayLive(result, client, schedule, now) {
         if (v) p.ExternalTripId = v.tripId;
       }
   }
-  const prediction = (leg, stop, scheduled) =>
-    (cache.get(stop.code || stop.id) || []).find(
+  for (const [id, records] of cache)
+    cache.set(id, latestPredictions(records, now));
+  const prediction = (leg, stop, scheduled) => {
+    if (leg.instance && leg.instance.split(":")[0] !== serviceDate(now))
+      return null;
+    const matches = (cache.get(stop.code || stop.id) || []).filter(
       (p) =>
+        predictionAtStop(p, stop.code || stop.id) &&
         String(p.ExternalTripId ?? "") === leg.tripId &&
         String(p.RouteId) === String(leg.route) &&
         fresh(p, now) &&
         Number.isFinite(agencyTime(p.ETA)) &&
-        Math.abs(agencyTime(p.ETA) - scheduled) < 2 * 3600_000,
+        Math.abs(agencyTime(p.ETA) - scheduled) < 2 * 3600000,
     );
+    return matches.length === 1 ? matches[0] : null;
+  };
   const valid = [];
   for (const original of result.journeys) {
     const j = { ...original, legs: original.legs.map((l) => ({ ...l })) };
@@ -134,6 +143,8 @@ export async function overlayLive(result, client, schedule, now) {
         String(bp.VehicleId) !== String(ap.VehicleId)
       )
         continue;
+      l.boardingPredictionAt = bp ? agencyTime(bp.Timestamp) : null;
+      l.alightingPredictionAt = ap ? agencyTime(ap.Timestamp) : null;
       if (bp?.RouteDir) l.direction = bp.RouteDir;
       if (bp) l.departsAt = agencyTime(bp.ETA);
       if (ap) l.arrivesAt = agencyTime(ap.ETA);

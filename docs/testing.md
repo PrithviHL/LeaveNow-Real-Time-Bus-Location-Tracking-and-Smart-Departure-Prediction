@@ -51,3 +51,7 @@ See [routing rules](timetable-routing.md) for search bounds and [measured evalua
 ## OSM walking rollout
 
 The November 18, 2026 rollout passed 58 Node and 36 Python tests, plus both remote workflows. Tests cover detours, partial-edge snapping, pedestrian one-ways, access restrictions, disconnected paths, crossing/stair costs, map geometry, and a missed-departure regression. See [deployment evidence and resource limits](walking-routing.md#deployment-verification--november-18-2026-eastern). Counts describe that commit, not a permanent suite size.
+
+## Rigorous timing audit
+
+See [the November 18 timing audit](../benchmarks/timing/README.md) for independent walking-oracle checks, delayed-transfer stress cases, current-feed search invariants, reproduced bugs and fixes, and the limits of live forecast validation. The report deliberately distinguishes calculation correctness, snapshot consistency, and real-world prediction error; it does not claim guaranteed arrivals or measured walking accuracy.

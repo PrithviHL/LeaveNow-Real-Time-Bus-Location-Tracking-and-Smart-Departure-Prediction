@@ -250,7 +250,7 @@ export class WalkingGraph {
         travel(s, 1 - start.t) +
         (start.t < 1 ? crossing(s[1]) : 0),
     );
-    if (s[4])
+    if (s[4] || start.t < 1e-9)
       addStart(
         s[0],
         (start.meters * 60) / SPEED +
@@ -265,7 +265,7 @@ export class WalkingGraph {
           (end.meters * 60) / SPEED,
       ],
     ]);
-    if (t[4])
+    if (t[4] || end.t > 1 - 1e-9)
       targets.set(
         t[1],
         travel(t, 1 - end.t) +

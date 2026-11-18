@@ -428,3 +428,35 @@ class AppTests(unittest.TestCase):
             self.assertFalse(
                 any("assigned to this journey" in c.value for c in app.caption)
             )
+
+    def test_exact_trip_live_destination_includes_final_walk(self):
+        now = int(time.time() * 1000)
+
+        def reply(endpoint, payload=None):
+            if endpoint.startswith("/api/tracking"):
+                return {
+                    "buses": [
+                        {
+                            "id": "v",
+                            "tripId": "selected-trip",
+                            "route": "10",
+                            "arrivalAt": now + 300000,
+                            "alightingAt": now + 600000,
+                            "destination": "Downtown",
+                        }
+                    ]
+                }
+            return trip_fixture()
+
+        with patch("client.api_request", side_effect=reply):
+            app = ready_app()
+            next(b for b in app.button if b.label == "Find my next bus").click().run()
+            self.assertFalse(app.exception)
+            metric = next(
+                m
+                for m in app.metric
+                if m.label == "Destination · Live bus + estimated walk"
+            )
+            from client import clock_time
+
+            self.assertEqual(metric.value, clock_time(now + 660000))

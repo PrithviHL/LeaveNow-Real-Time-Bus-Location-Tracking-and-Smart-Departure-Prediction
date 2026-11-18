@@ -1,0 +1,1112 @@
+{
+  "schema": 1,
+  "seed": 20261118,
+  "verifiedAt": "2026-11-18T20:13:36.311Z",
+  "serviceDate": "20261118",
+  "clock": 1795031400000,
+  "feedSource": "https://go-rts.com/wp-content/uploads/2026/08/RTSGTFS_Fall2026-1.zip",
+  "sourceZipSha256": "b273632dde42ba6dee2b3a9cb9d0b802f60d18917d90016f3ff5faa9ce64420f",
+  "feedSha256": "cc15514713782aa8de76f524cb5623d6db48bdcf3e5498f5f14f49baa9e0690b",
+  "walkingGraphSha256": "9e1709ae845be64387d9973c712cb18fb29ad3f0e566dcbf776a99a0ef20e4bd",
+  "stops": 972,
+  "trips": 3321,
+  "searches": 120,
+  "candidateJourneys": 2426,
+  "transferJourneys": 34,
+  "routedWalks": 4886,
+  "estimatedWalks": 0,
+  "invariantFailures": 0,
+  "localLatencyMs": {
+    "p50": 16.98675000000003,
+    "p95": 61.49766599999998,
+    "max": 78.640083
+  },
+  "rssBytes": 254541824,
+  "limitations": [
+    "No HTTP, UI or live provider calls in this run.",
+    "No observed real arrivals or timed human walks: MAE, on-time accuracy and guarantees are not measured.",
+    "120 generated searches on one service date do not establish citywide coverage or optimality."
+  ],
+  "cases": [
+    {
+      "index": 0,
+      "origin": "695",
+      "destination": "13",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 1,
+      "origin": "878",
+      "destination": "1329",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 17
+    },
+    {
+      "index": 2,
+      "origin": "820",
+      "destination": "171",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 18
+    },
+    {
+      "index": 3,
+      "origin": "505",
+      "destination": "520",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 4,
+      "origin": "682",
+      "destination": "362",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 5,
+      "origin": "16",
+      "destination": "1333",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 8
+    },
+    {
+      "index": 6,
+      "origin": "1139",
+      "destination": "968",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 7,
+      "origin": "15",
+      "destination": "477",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 8,
+      "origin": "26",
+      "destination": "1493",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 8
+    },
+    {
+      "index": 9,
+      "origin": "599",
+      "destination": "618",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 10,
+      "origin": "808",
+      "destination": "171",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 11,
+      "origin": "682",
+      "destination": "365",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 11
+    },
+    {
+      "index": 12,
+      "origin": "585",
+      "destination": "589",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 13,
+      "origin": "101",
+      "destination": "346",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 19
+    },
+    {
+      "index": 14,
+      "origin": "1192",
+      "destination": "473",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 15,
+      "origin": "505",
+      "destination": "517",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 16,
+      "origin": "37",
+      "destination": "43",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 17,
+      "origin": "442",
+      "destination": "673",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 11
+    },
+    {
+      "index": 18,
+      "origin": "1027",
+      "destination": "463",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 19,
+      "origin": "472",
+      "destination": "362",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 20,
+      "origin": "688",
+      "destination": "1581",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 12
+    },
+    {
+      "index": 21,
+      "origin": "835",
+      "destination": "466",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 22,
+      "origin": "1337",
+      "destination": "37",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 23,
+      "origin": "1625",
+      "destination": "1623",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 20
+    },
+    {
+      "index": 24,
+      "origin": "18",
+      "destination": "1268",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 25,
+      "origin": "467",
+      "destination": "1363",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 26,
+      "origin": "1268",
+      "destination": "1337",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 23
+    },
+    {
+      "index": 27,
+      "origin": "368",
+      "destination": "379",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 28,
+      "origin": "954",
+      "destination": "956",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 29,
+      "origin": "1050",
+      "destination": "1091",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 4
+    },
+    {
+      "index": 30,
+      "origin": "955",
+      "destination": "956",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 31,
+      "origin": "523",
+      "destination": "438",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 32,
+      "origin": "816",
+      "destination": "819",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 12
+    },
+    {
+      "index": 33,
+      "origin": "640",
+      "destination": "469",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 34,
+      "origin": "334",
+      "destination": "350",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 19
+    },
+    {
+      "index": 35,
+      "origin": "823",
+      "destination": "520",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 5
+    },
+    {
+      "index": 36,
+      "origin": "172",
+      "destination": "838",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 37,
+      "origin": "969",
+      "destination": "638",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 38,
+      "origin": "806",
+      "destination": "859",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 11
+    },
+    {
+      "index": 39,
+      "origin": "459",
+      "destination": "462",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 40,
+      "origin": "1556",
+      "destination": "1493",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 41,
+      "origin": "363",
+      "destination": "365",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 42,
+      "origin": "597",
+      "destination": "627",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 43,
+      "origin": "478",
+      "destination": "1180",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 44,
+      "origin": "846",
+      "destination": "848",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 19
+    },
+    {
+      "index": 45,
+      "origin": "43",
+      "destination": "44",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 0
+    },
+    {
+      "index": 46,
+      "origin": "801",
+      "destination": "810",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 47,
+      "origin": "455",
+      "destination": "473",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 22
+    },
+    {
+      "index": 48,
+      "origin": "38",
+      "destination": "39",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 49,
+      "origin": "1011",
+      "destination": "1012",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 50,
+      "origin": "466",
+      "destination": "1481",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 51,
+      "origin": "855",
+      "destination": "898",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 52,
+      "origin": "482",
+      "destination": "1138",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 0
+    },
+    {
+      "index": 53,
+      "origin": "1237",
+      "destination": "1363",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 22
+    },
+    {
+      "index": 54,
+      "origin": "1254",
+      "destination": "925",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 55,
+      "origin": "481",
+      "destination": "485",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 56,
+      "origin": "1270",
+      "destination": "1333",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 8
+    },
+    {
+      "index": 57,
+      "origin": "1486",
+      "destination": "1493",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 58,
+      "origin": "849",
+      "destination": "473",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 59,
+      "origin": "198",
+      "destination": "1216",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 60,
+      "origin": "1206",
+      "destination": "143",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 61,
+      "origin": "804",
+      "destination": "859",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 62,
+      "origin": "1420",
+      "destination": "671",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 14
+    },
+    {
+      "index": 63,
+      "origin": "1364",
+      "destination": "1",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 64,
+      "origin": "307",
+      "destination": "314",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 18
+    },
+    {
+      "index": 65,
+      "origin": "1113",
+      "destination": "1118",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 5
+    },
+    {
+      "index": 66,
+      "origin": "925",
+      "destination": "1179",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 67,
+      "origin": "34",
+      "destination": "53",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 68,
+      "origin": "1626",
+      "destination": "1630",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 4
+    },
+    {
+      "index": 69,
+      "origin": "690",
+      "destination": "364",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 70,
+      "origin": "7",
+      "destination": "26",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 71,
+      "origin": "745",
+      "destination": "768",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 4
+    },
+    {
+      "index": 72,
+      "origin": "439",
+      "destination": "680",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 73,
+      "origin": "1097",
+      "destination": "1628",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 74,
+      "origin": "297",
+      "destination": "1499",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 6
+    },
+    {
+      "index": 75,
+      "origin": "1277",
+      "destination": "1279",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 76,
+      "origin": "18",
+      "destination": "481",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 77,
+      "origin": "1193",
+      "destination": "1177",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 78,
+      "origin": "15",
+      "destination": "477",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 79,
+      "origin": "1557",
+      "destination": "1176",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 80,
+      "origin": "462",
+      "destination": "43",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 16
+    },
+    {
+      "index": 81,
+      "origin": "42",
+      "destination": "43",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 82,
+      "origin": "364",
+      "destination": "365",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 83,
+      "origin": "1253",
+      "destination": "1254",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 84,
+      "origin": "570",
+      "destination": "571",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 85,
+      "origin": "349",
+      "destination": "131",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 19
+    },
+    {
+      "index": 86,
+      "origin": "688",
+      "destination": "690",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 23
+    },
+    {
+      "index": 87,
+      "origin": "437",
+      "destination": "1595",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 88,
+      "origin": "1285",
+      "destination": "1552",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 0
+    },
+    {
+      "index": 89,
+      "origin": "927",
+      "destination": "1183",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 9
+    },
+    {
+      "index": 90,
+      "origin": "810",
+      "destination": "859",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 91,
+      "origin": "485",
+      "destination": "1138",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 92,
+      "origin": "40",
+      "destination": "1216",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 7
+    },
+    {
+      "index": 93,
+      "origin": "1486",
+      "destination": "1493",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 94,
+      "origin": "1174",
+      "destination": "1253",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 95,
+      "origin": "134",
+      "destination": "135",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 13
+    },
+    {
+      "index": 96,
+      "origin": "507",
+      "destination": "518",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 97,
+      "origin": "25",
+      "destination": "1549",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 98,
+      "origin": "804",
+      "destination": "818",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 13
+    },
+    {
+      "index": 99,
+      "origin": "830",
+      "destination": "837",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 100,
+      "origin": "687",
+      "destination": "45",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 101,
+      "origin": "1184",
+      "destination": "1254",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 19
+    },
+    {
+      "index": 102,
+      "origin": "563",
+      "destination": "1560",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 103,
+      "origin": "686",
+      "destination": "360",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 104,
+      "origin": "1173",
+      "destination": "1174",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 105,
+      "origin": "469",
+      "destination": "1253",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 106,
+      "origin": "859",
+      "destination": "174",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 107,
+      "origin": "42",
+      "destination": "1192",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 108,
+      "origin": "898",
+      "destination": "720",
+      "mode": "leave_now",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 17
+    },
+    {
+      "index": 109,
+      "origin": "713",
+      "destination": "726",
+      "mode": "depart_at",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 110,
+      "origin": "468",
+      "destination": "469",
+      "mode": "arrive_by",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 111,
+      "origin": "1493",
+      "destination": "966",
+      "mode": "leave_now",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 112,
+      "origin": "835",
+      "destination": "837",
+      "mode": "depart_at",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 113,
+      "origin": "467",
+      "destination": "469",
+      "mode": "arrive_by",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 114,
+      "origin": "832",
+      "destination": "840",
+      "mode": "leave_now",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 24
+    },
+    {
+      "index": 115,
+      "origin": "53",
+      "destination": "1290",
+      "mode": "depart_at",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 116,
+      "origin": "1237",
+      "destination": "1176",
+      "mode": "arrive_by",
+      "maxWalk": 5,
+      "maxTransfers": 0,
+      "results": 17
+    },
+    {
+      "index": 117,
+      "origin": "849",
+      "destination": "1253",
+      "mode": "leave_now",
+      "maxWalk": 10,
+      "maxTransfers": 1,
+      "results": 24
+    },
+    {
+      "index": 118,
+      "origin": "398",
+      "destination": "278",
+      "mode": "depart_at",
+      "maxWalk": 15,
+      "maxTransfers": 0,
+      "results": 19
+    },
+    {
+      "index": 119,
+      "origin": "955",
+      "destination": "1193",
+      "mode": "arrive_by",
+      "maxWalk": 20,
+      "maxTransfers": 1,
+      "results": 14
+    }
+  ]
+}

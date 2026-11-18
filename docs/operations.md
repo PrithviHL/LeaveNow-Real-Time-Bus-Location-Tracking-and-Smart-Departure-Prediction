@@ -86,3 +86,7 @@ Journey options show **Live bus assigned** only for a unique fresh vehicle match
 ## Tracking map camera
 
 The initial map view is frozen per selected origin/destination and journey. Five-second position/approach updates keep the same initial view and layer identities, allowing the browser to retain manual pan/zoom. Conditional tracking messages occupy a fixed container so they do not shift the map in the render tree. **Fit route** deliberately refits the current route and bus; changing the journey or endpoints initializes a new camera. A full browser reload may reset the view.
+
+## Timing verification and live destination estimates
+
+Use [the timing audit](../benchmarks/timing/README.md) when changing ETA, walking or transfer logic. Live destination display requires a verified downstream prediction; the final walk stays estimated. For a transfer’s first leg, a new live arrival that exceeds the last-checked connection buffer triggers a warning to refresh alternatives, not a promise of reaching the destination. Predictions are selected by generation time, never by the most optimistic ETA. Rechecking every five seconds does not force RTS to publish new forecasts at that rate.

@@ -362,6 +362,34 @@ def ticket(journey, bus=None):
     )
 
 
+def live_arrival_summary(journey, leg, bus):
+    """Only an exact-trip downstream prediction can produce a live arrival."""
+    arrival = (bus or {}).get("alightingAt")
+    boarding = (bus or {}).get("arrivalAt")
+    if not isinstance(arrival, (int, float)) or not math.isfinite(arrival):
+        return None
+    if boarding is not None and arrival <= boarding:
+        return None
+    legs = journey.get("legs") or [journey]
+    last = legs[-1]
+    if (
+        leg.get("tripId") == last.get("tripId")
+        and leg["alighting"]["id"] == last["alighting"]["id"]
+    ):
+        return {
+            "label": "Destination · Live bus + estimated walk",
+            "at": arrival + journey.get("finalWalkMinutes", 0) * 60000,
+            "connectionRisk": False,
+        }
+    next_leg = legs[1]
+    required = (journey.get("connection") or {}).get("minimumSeconds", 0) * 1000
+    return {
+        "label": "Transfer stop · Live arrival",
+        "at": arrival,
+        "connectionRisk": arrival + required > next_leg["departsAt"],
+    }
+
+
 def timeline(journey):
     if journey.get("legs"):
         steps = [("01", "Walk to your stop", journey["boarding"]["name"])]
