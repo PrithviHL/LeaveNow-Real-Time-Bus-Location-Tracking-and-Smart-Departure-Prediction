@@ -1,3 +1,4 @@
+import { createMetrics } from "./observability.js";
 import http from "node:http";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -19,8 +20,10 @@ if (schedule)
   console.log(
     `Timetable ready: ${schedule.stops.length} stops; feed ${schedule.metadata().version}`,
   );
+const metrics = createMetrics();
 const server = http.createServer(
-  handler(new BusTimeClient(config.apiKey, { schedule, feed: config.feed }), {
+  handler(new BusTimeClient(config.apiKey, { schedule, feed: config.feed, fetcher: metrics.wrapFetcher(fetch) }), {
+    metrics,
     allowedHosts: config.allowedHosts,
     schedule,
   }),

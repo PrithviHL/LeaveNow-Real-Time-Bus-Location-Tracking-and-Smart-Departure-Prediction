@@ -142,3 +142,7 @@ Data: [RTS](https://go-rts.com/rts-data/). Maps: [OpenStreetMap](https://www.ope
 ### Track the bus you choose
 
 After searching, choose a **Journey option**. Its exact trip is tracked automatically; transfer journeys retain a **Bus leg to track** selector. There is no separate bus picker. A blue bus icon and approach line lead to the green boarding pin; the destination pin is red. The primary card uses the matched bus’s live boarding ETA, while planned destination/connection times remain clearly labelled in the details. No matching assignment shows **Live tracking unavailable for this trip** rather than another same-route bus. Tracking refreshes every five seconds when enabled. Direct provider IDs or a unique exact date/start-time/route/full-stop-sequence signature establish identity; ambiguous matches stay hidden. [Tracking rules](docs/operations.md#journey-bound-live-tracking).
+
+## Observability
+
+Prometheus metrics and a provisioned Grafana dashboard cover API latency/errors, live tracking availability, GPS/prediction freshness, RTS HTTP attempts and Node resources. Run the free local Docker stack using the [monitoring guide](deploy/monitoring/README.md). Metrics exclude secrets and user locations. The Render exporter stays private; the local stack monitors its own Compose API. Freshness is not measured arrival accuracy.

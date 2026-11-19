@@ -1,0 +1,47 @@
+rule_files:
+  - alerts.yml
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{job="leavenow-api",instance="api:3001"}'
+        values: '1 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: LeaveNowApiDown
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: LeaveNowApiDown
+        exp_alerts:
+          - exp_labels:
+              job: leavenow-api
+              instance: api:3001
+              severity: critical
+            exp_annotations:
+              summary: LeaveNow API cannot be scraped
+              description: Check API health, container logs, and the private scrape network.
+  - interval: 1m
+    input_series:
+      - series: 'leavenow_http_requests_total{status="503",route="/api/plan",method="POST"}'
+        values: '0+1x20'
+      - series: 'leavenow_tracking_results_total{outcome="unavailable"}'
+        values: '0+1x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: LeaveNowApiErrors
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: LeaveNowTrackingUnavailable
+        exp_alerts: []
+  - interval: 1m
+    input_series:
+      - series: 'leavenow_http_requests_total{status="503",route="/api/plan",method="POST"}'
+        values: '0+10x20'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: LeaveNowApiErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: LeaveNow API error rate exceeds 5 percent

@@ -19,5 +19,13 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: python3 scripts/audit-credential-history.py HEAD
+      - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm run test:coverage
+  monitoring:
+    name: Validate monitoring configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker run --rm --entrypoint promtool -v "$PWD/deploy/monitoring:/etc/prometheus:ro" prom/prometheus:v3.16.0 check config /etc/prometheus/prometheus.yml
+      - run: docker run --rm --entrypoint promtool -v "$PWD/deploy/monitoring:/etc/prometheus:ro" prom/prometheus:v3.16.0 test rules /etc/prometheus/alerts.test.yml

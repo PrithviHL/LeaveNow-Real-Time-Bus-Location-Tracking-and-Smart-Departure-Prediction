@@ -1,0 +1,26 @@
+groups:
+  - name: leavenow
+    rules:
+      - alert: LeaveNowApiDown
+        expr: up{job="leavenow-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: LeaveNow API cannot be scraped
+          description: Check API health, container logs, and the private scrape network.
+      - alert: LeaveNowApiErrors
+        expr: sum(rate(leavenow_http_requests_total{status=~"5.."}[5m])) / sum(rate(leavenow_http_requests_total[5m])) > 0.05 and sum(increase(leavenow_http_requests_total[5m])) >= 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: LeaveNow API error rate exceeds 5 percent
+      - alert: LeaveNowTrackingUnavailable
+        expr: sum(rate(leavenow_tracking_results_total{outcome="unavailable"}[10m])) / sum(rate(leavenow_tracking_results_total[10m])) > 0.8 and sum(increase(leavenow_tracking_results_total[10m])) >= 30
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: Most requested trips have no verified live evidence
+          description: This can be normal outside service hours; check provider status and service schedules before treating it as an outage.

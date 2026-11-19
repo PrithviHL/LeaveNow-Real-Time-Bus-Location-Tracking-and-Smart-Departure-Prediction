@@ -1,4 +1,7 @@
 FROM node:22-bookworm-slim AS node-runtime
+WORKDIR /node-deps
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
 FROM python:3.12-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 ENV NODE_OPTIONS="--max-old-space-size=160 --max-semi-space-size=4"
@@ -6,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 ca-c
 WORKDIR /app
 COPY package.json ./
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /node-deps/node_modules ./node_modules
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 COPY prototypes/streamlit/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt

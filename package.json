@@ -14,5 +14,8 @@
     "check": "node scripts/check.js",
     "test:coverage": "node --test --experimental-test-coverage tests/*.test.js",
     "gtfs:import": "python3 scripts/import-gtfs.py"
+  },
+  "dependencies": {
+    "@prometheus-io/client": "0.16.1"
   }
 }

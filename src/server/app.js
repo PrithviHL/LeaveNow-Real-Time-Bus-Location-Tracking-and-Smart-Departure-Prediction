@@ -20,10 +20,16 @@ export function handler(
     allowedHosts = ["localhost", "127.0.0.1", "[::1]"],
     schedule = null,
     geocoder = new Geocoder(),
+    metrics = null,
   } = {},
 ) {
   return async (req, res) => {
     const json = (status, data) => {
+      if (status === 200 && metrics) {
+        const pathname = req.url.split("?")[0];
+        if (pathname === "/api/plan") metrics.plan(data);
+        if (pathname === "/api/tracking") metrics.tracking(data);
+      }
       res.writeHead(status, {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
@@ -39,8 +45,16 @@ export function handler(
     );
     try {
       const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+      metrics?.observeHttp(req, res, url.pathname);
       if (!allowedHosts.includes(url.hostname))
         return json(403, { error: "Local access only." });
+      if (req.method === "GET" && url.pathname === "/metrics" && metrics) {
+        res.writeHead(200, {
+          "Content-Type": metrics.registry.contentType,
+          "Cache-Control": "no-store",
+        });
+        return res.end(await metrics.registry.metrics());
+      }
       if (req.method === "POST") {
         if (req.headers.origin && req.headers.origin !== url.origin)
           return json(403, { error: "Cross-origin request rejected." });

@@ -24,3 +24,5 @@
 !scripts/import-gtfs.py
 !scripts/check-live-tracking.js
 !prototypes/streamlit/authentication.py
+
+!package-lock.json
