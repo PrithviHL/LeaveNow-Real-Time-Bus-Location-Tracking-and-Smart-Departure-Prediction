@@ -41,6 +41,9 @@ class Element {
   removeEventListener(k, fn) {
     if (this.listeners[k] === fn) delete this.listeners[k];
   }
+  focus() {
+    this.focused = true;
+  }
   fire(k, extra = {}) {
     this.listeners[k]?.({ preventDefault() {}, ...extra });
   }
@@ -48,6 +51,7 @@ class Element {
 function setup(initial = {}) {
   const input = new Element(),
     list = new Element(),
+    clear = new Element(),
     events = [],
     timers = new Map();
   let timerId = 0,
@@ -78,7 +82,10 @@ function setup(initial = {}) {
     cleanup?.();
     mountData = { ...base, ...update };
     cleanup = mount({
-      parentElement: { querySelector: (s) => (s === "input" ? input : list) },
+      parentElement: {
+        querySelector: (s) =>
+          s === "input" ? input : s === ".clear-location" ? clear : list,
+      },
       data: mountData,
       setStateValue: (key, event) => events.push(event),
     });
@@ -88,6 +95,7 @@ function setup(initial = {}) {
   return {
     input,
     list,
+    clear,
     events,
     render,
     flush() {
@@ -168,8 +176,38 @@ test("preset/GPS commands update the field and IME input waits for composition t
   assert.equal(v.events.at(-1).type, "query");
 });
 
-test('Escape stays closed when place results arrive; focusing reopens suggestions',()=>{
- const v=setup();v.input.value='Reitz';v.input.fire('input');v.input.fire('keydown',{key:'Escape'});
- v.render({value:'Reitz',placeQuery:'Reitz',places:[{id:'place:reitz:0',kind:'place',label:'Reitz Cafe'}]});
- assert.equal(v.list.children.length,0);v.input.fire('focus');assert.equal(v.list.children.length,2);
+test("Escape stays closed when place results arrive; focusing reopens suggestions", () => {
+  const v = setup();
+  v.input.value = "Reitz";
+  v.input.fire("input");
+  v.input.fire("keydown", { key: "Escape" });
+  v.render({
+    value: "Reitz",
+    placeQuery: "Reitz",
+    places: [{ id: "place:reitz:0", kind: "place", label: "Reitz Cafe" }],
+  });
+  assert.equal(v.list.children.length, 0);
+  v.input.fire("focus");
+  assert.equal(v.list.children.length, 2);
+});
+
+test("clear removes resolved input, cancels pending query and rejects stale text restoration", () => {
+  const v = setup({ value: "Reitz Union", resolved: true });
+  assert.equal(v.clear.hidden, false);
+  v.input.value = "wrong address";
+  v.input.fire("input");
+  v.clear.onclick();
+  v.flush();
+  assert.equal(v.input.value, "");
+  assert.equal(v.clear.hidden, true);
+  assert.equal(v.input.focused, true);
+  assert.equal(v.events.at(-1).type, "clear");
+  v.render({
+    value: "wrong address",
+    placeQuery: "wrong address",
+    resolved: false,
+    places: [{ id: "old", label: "Old address", kind: "place" }],
+  });
+  assert.equal(v.input.value, "");
+  assert.equal(v.list.children.length, 0);
 });

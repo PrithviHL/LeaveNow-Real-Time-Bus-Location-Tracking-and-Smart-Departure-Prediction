@@ -460,3 +460,21 @@ class AppTests(unittest.TestCase):
             from client import clock_time
 
             self.assertEqual(metric.value, clock_time(now + 660000))
+
+    def test_clear_button_removes_location_and_invalidates_old_query_events(self):
+        app = ready_app()
+        command = app.session_state["origin_command"]
+        picker_event(app, "origin", {"type": "clear", "command": command})
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["origin_value"], "")
+        self.assertIsNone(app.session_state["resolved_origin"])
+        self.assertTrue(
+            next(b for b in app.button if b.label == "Find my next bus").disabled
+        )
+        picker_event(
+            app,
+            "origin",
+            {"type": "query", "command": command, "value": "stale address"},
+        )
+        self.assertEqual(app.session_state["origin_value"], "")
+        self.assertIsNotNone(app.session_state["resolved_destination"])

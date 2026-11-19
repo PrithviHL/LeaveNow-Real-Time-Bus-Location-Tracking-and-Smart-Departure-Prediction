@@ -160,22 +160,25 @@ gps_component = st.components.v2.component(
 
 location_picker_component = st.components.v2.component(
     "leavenow_location_picker",
-    html='<div class="picker"><input type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" maxlength="150" placeholder="Stop, address, or place"><div class="suggestions" role="listbox"></div></div>',
+    html='<div class="picker"><div class="input-row"><input type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" maxlength="150" placeholder="Stop, address, or place"><button class="clear-location" type="button" aria-label="Clear location" title="Clear location" hidden>×</button></div><div class="suggestions" role="listbox"></div></div>',
     css=""".picker{font:14px sans-serif;color:#e8eef4}
-.picker input{box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #64748066;border-radius:10px;background:#0f1d2b;color:#f5f7fa;font:inherit;outline:none}.picker input:focus{border-color:#c5f267;box-shadow:0 0 0 2px #c5f26733}.suggestions:not(:empty){margin-top:4px;max-height:240px;overflow-y:auto;border:1px solid #64748066;border-radius:10px;background:#14232d;box-shadow:0 10px 24px #0005}.suggestion{display:block;width:100%;padding:11px 13px;border:0;border-bottom:1px solid #ffffff12;background:transparent;color:#eef4f5;text-align:left;font:inherit;cursor:pointer}.suggestion:hover,.suggestion[aria-selected="true"]{background:#254047}.kind{display:inline-block;min-width:60px;color:#c5f267;font-size:11px}.empty{padding:11px 13px;color:#aab8c2;font-size:12px}""",
+.input-row{position:relative}.clear-location{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:30px;height:30px;padding:0;border:0;border-radius:7px;background:transparent;color:#b5c4cc;font:24px/1 sans-serif;cursor:pointer}.clear-location[hidden]{display:none}.clear-location:hover{background:#ffffff12;color:white}.clear-location:focus-visible{outline:2px solid #c5f267;outline-offset:1px}.picker input{box-sizing:border-box;width:100%;padding:13px 44px 13px 14px;border:1px solid #64748066;border-radius:10px;background:#0f1d2b;color:#f5f7fa;font:inherit;outline:none}.picker input:focus{border-color:#c5f267;box-shadow:0 0 0 2px #c5f26733}.suggestions:not(:empty){margin-top:4px;max-height:240px;overflow-y:auto;border:1px solid #64748066;border-radius:10px;background:#14232d;box-shadow:0 10px 24px #0005}.suggestion{display:block;width:100%;padding:11px 13px;border:0;border-bottom:1px solid #ffffff12;background:transparent;color:#eef4f5;text-align:left;font:inherit;cursor:pointer}.suggestion:hover,.suggestion[aria-selected="true"]{background:#254047}.kind{display:inline-block;min-width:60px;color:#c5f267;font-size:11px}.empty{padding:11px 13px;color:#aab8c2;font-size:12px}""",
     js=r"""export default function({parentElement, data, setStateValue}) {
-      const input=parentElement.querySelector('input'), list=parentElement.querySelector('.suggestions');
+      const input=parentElement.querySelector('input'), list=parentElement.querySelector('.suggestions'), clear=parentElement.querySelector('.clear-location');
       let timer, composing=false, active=true, closed=Boolean(data.resolved)||input.dataset.open==='0', selected=-1, matches=[];
       input.setAttribute('aria-label',data.label);
       list.id=data.id+'-options';input.setAttribute('aria-controls',list.id);
       if(input.dataset.command!==String(data.command)) {
         input.value=data.value||'';input.dataset.command=String(data.command);
       }
+      const syncClear=()=>{clear.hidden=input.value.length===0;};
+      clear.setAttribute('aria-label','Clear '+data.label);clear.title='Clear '+data.label;
+      syncClear();
       const emit=event=>{
         const count=Number(input.dataset.sequence||0)+1;input.dataset.sequence=String(count);
         setStateValue('event',{...event,command:data.command,nonce:String(Date.now())+':'+count});
       };
-      const choose=item=>{clearTimeout(timer);input.value=item.label;closed=true;input.dataset.open='0';list.replaceChildren();input.setAttribute('aria-expanded','false');emit({type:'select',id:item.id});};
+      const choose=item=>{clearTimeout(timer);input.value=item.label;syncClear();closed=true;input.dataset.open='0';list.replaceChildren();input.setAttribute('aria-expanded','false');emit({type:'select',id:item.id});};
       const draw=()=>{
         list.replaceChildren();matches=[];selected=-1;input.removeAttribute('aria-activedescendant');
         const query=input.value.trim().toLowerCase();
@@ -198,7 +201,7 @@ location_picker_component = st.components.v2.component(
         input.setAttribute('aria-expanded','true');
       };
       const change=()=>{
-        clearTimeout(timer);closed=false;input.dataset.open='1';draw();
+        clearTimeout(timer);syncClear();closed=false;input.dataset.open='1';draw();
         if(!composing && data.resolved && input.dataset.invalidated!==String(data.command)){
           input.dataset.invalidated=String(data.command);emit({type:'edit',value:input.value});
         }
@@ -219,9 +222,12 @@ location_picker_component = st.components.v2.component(
         }
         if(e.key==='Enter'&&!closed&&matches.length){e.preventDefault();choose(matches[Math.max(0,selected)]);}
       };
+      const erase=()=>{clearTimeout(timer);composing=false;input.value='';closed=true;input.dataset.open='0';input.dataset.clearFocus='1';matches=[];selected=-1;list.replaceChildren();input.removeAttribute('aria-activedescendant');input.setAttribute('aria-expanded','false');syncClear();emit({type:'clear'});input.focus();};
+      clear.onmousedown=e=>e.preventDefault();clear.onclick=erase;
+      if(input.dataset.clearFocus==='1' && !(data.value||'')){delete input.dataset.clearFocus;input.focus();}
       input.addEventListener('input',change);input.addEventListener('focus',focus);input.addEventListener('blur',blur);input.addEventListener('compositionstart',start);input.addEventListener('compositionend',end);input.addEventListener('keydown',keydown);draw();
       if(!data.resolved && (data.typing || input.value!==(data.value||''))) timer=setTimeout(()=>{if(active)emit({type:'query',value:input.value});},1100);
-      return ()=>{active=false;clearTimeout(timer);for(const [type,fn] of [['input',change],['focus',focus],['blur',blur],['compositionstart',start],['compositionend',end],['keydown',keydown]])input.removeEventListener(type,fn);};
+      return ()=>{active=false;clearTimeout(timer);clear.onclick=null;clear.onmousedown=null;for(const [type,fn] of [['input',change],['focus',focus],['blur',blur],['compositionstart',start],['compositionend',end],['keydown',keydown]])input.removeEventListener(type,fn);};
     }""",
 )
 
@@ -246,6 +252,12 @@ def apply_location_event(key, event, stops, places):
         key + "_command", 0
     ):
         return False
+    if event.get("type") == "clear":
+        set_location(key, "", None)
+        st.session_state.pop(key + "_selected_name", None)
+        st.session_state.pop("planned_trip", None)
+        st.session_state.pop("trip_result", None)
+        return True
     if event.get("type") in ("query", "edit"):
         st.session_state[key + "_typing"] = event.get("type") == "edit"
         st.session_state[key + "_value"] = str(event.get("value", ""))[:150]
